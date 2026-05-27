@@ -192,4 +192,4 @@ Planned:
 
 AUTHOR
 
-Denis Sankov
+Denis Sankov.
