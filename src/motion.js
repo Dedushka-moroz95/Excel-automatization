@@ -5,8 +5,6 @@
     ".workspace-section",
     ".section-title",
     ".period-toolbar",
-    ".preview-panel",
-    ".mapper-controls > .field",
     ".metric-toolbar",
     ".action-row",
     ".data-quality-inline",
