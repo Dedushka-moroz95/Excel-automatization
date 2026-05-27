@@ -7,6 +7,7 @@
     const metrics = options.metrics;
     const comparisonMode = options.comparisonMode || "endpoint";
     const comparisonPairs = buildComparisonPairs(periods, comparisonMode);
+    const metricProfiles = buildMetricProfiles(periods, metrics);
     const periodIndexes = periods.map(function (period) {
       return {
         period: period,
@@ -48,7 +49,7 @@
       });
 
       const metricResults = metrics.map(function (metric) {
-        return buildMetricResult(metric, periods, records, key, label, invalidValues, comparisonMode);
+        return buildMetricResult(metric, periods, records, key, label, invalidValues, comparisonMode, metricProfiles.get(metric.id));
       });
 
       rows.push({
@@ -172,7 +173,8 @@
     };
   }
 
-  function buildMetricResult(metric, periods, records, key, label, invalidValues, comparisonMode) {
+  function buildMetricResult(metric, periods, records, key, label, invalidValues, comparisonMode, metricProfile) {
+    const profile = metricProfile || { valueFormat: "number", scale: 1 };
     const periodValues = periods.map(function (period, index) {
       const record = records[index];
       const columnId = metric.columns[period.id];
@@ -185,11 +187,13 @@
           raw: "",
           isMissing: true,
           isNumeric: false,
+          valueFormat: profile.valueFormat,
         };
       }
 
       const raw = record.row.values[columnId];
       const number = Normalizers.normalizeNumber(raw);
+      const normalizedValue = number.isNumeric ? number.value * profile.scale : number.value;
 
       if (!number.isNumeric) {
         invalidValues.push({
@@ -205,18 +209,20 @@
       return {
         periodId: period.id,
         periodLabel: period.label,
-        value: number.value,
+        value: normalizedValue,
         raw: raw,
         isMissing: false,
         isNumeric: number.isNumeric,
+        valueFormat: profile.valueFormat,
       };
     });
-    const comparisons = buildMetricComparisons(periodValues, comparisonMode);
+    const comparisons = buildMetricComparisons(periodValues, comparisonMode, profile.valueFormat);
     const primaryComparison = comparisons[comparisons.length - 1] || null;
 
     return {
       metricId: metric.id,
       label: metric.label,
+      valueFormat: profile.valueFormat,
       periodValues: periodValues,
       comparisons: comparisons,
       valueA: primaryComparison ? primaryComparison.valueA : null,
@@ -229,17 +235,17 @@
     };
   }
 
-  function buildMetricComparisons(periodValues, comparisonMode) {
+  function buildMetricComparisons(periodValues, comparisonMode, valueFormat) {
     if (comparisonMode === "sequential") {
       return periodValues.slice(1).map(function (current, index) {
-        return buildSingleComparison(periodValues[index], current);
+        return buildSingleComparison(periodValues[index], current, valueFormat);
       });
     }
 
-    return [buildSingleComparison(periodValues[0], periodValues[periodValues.length - 1])];
+    return [buildSingleComparison(periodValues[0], periodValues[periodValues.length - 1], valueFormat)];
   }
 
-  function buildSingleComparison(fromValue, toValue) {
+  function buildSingleComparison(fromValue, toValue, valueFormat) {
     const hasNumbers = fromValue && toValue && fromValue.isNumeric && toValue.isNumeric;
     const delta = hasNumbers ? toValue.value - fromValue.value : null;
     const deltaPercent = hasNumbers ? Normalizers.calculatePercentChange(fromValue.value, toValue.value) : null;
@@ -256,7 +262,68 @@
       rawB: toValue ? toValue.raw : "",
       delta: delta,
       deltaPercent: deltaPercent,
+      valueFormat: valueFormat || "number",
       impact: getImpact(delta, hasNumbers),
+    };
+  }
+
+  function buildMetricProfiles(periods, metrics) {
+    const profiles = new Map();
+
+    metrics.forEach(function (metric) {
+      profiles.set(metric.id, detectMetricProfile(periods, metric));
+    });
+
+    return profiles;
+  }
+
+  function detectMetricProfile(periods, metric) {
+    let headerHints = 0;
+    let rawPercentHints = 0;
+    let numericCount = 0;
+    let decimalRatioCount = 0;
+
+    periods.forEach(function (period) {
+      const columnId = metric.columns[period.id];
+      const header = period.table.headers.find(function (item) {
+        return item.id === columnId;
+      });
+
+      if (header && Normalizers.headerLooksPercent(header.name)) {
+        headerHints += 1;
+      }
+
+      period.table.rows.forEach(function (row) {
+        const raw = row.values[columnId];
+
+        if (Normalizers.isEmptyValue(raw)) {
+          return;
+        }
+
+        if (Normalizers.valueLooksPercent(raw)) {
+          rawPercentHints += 1;
+        }
+
+        const number = Normalizers.normalizeNumber(raw);
+        if (!number.isNumeric) {
+          return;
+        }
+
+        numericCount += 1;
+
+        if (!Normalizers.valueLooksPercent(raw) && Math.abs(number.value) > 0 && Math.abs(number.value) <= 1) {
+          decimalRatioCount += 1;
+        }
+      });
+    });
+
+    const hasPercentHint = headerHints > 0 || rawPercentHints > 0;
+    const decimalRatioShare = numericCount ? decimalRatioCount / numericCount : 0;
+    const shouldScaleRatio = headerHints > 0 && rawPercentHints === 0 && decimalRatioShare >= 0.8;
+
+    return {
+      valueFormat: hasPercentHint ? "percent" : "number",
+      scale: shouldScaleRatio ? 100 : 1,
     };
   }
 

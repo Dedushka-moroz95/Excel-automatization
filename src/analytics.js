@@ -49,6 +49,7 @@
               valueB: comparison.valueB,
               delta: comparison.delta,
               deltaPercent: comparison.deltaPercent,
+              valueFormat: comparison.valueFormat || result.valueFormat || "number",
               impact: comparison.impact,
               score: comparison.delta,
             };
@@ -89,6 +90,7 @@
     return {
       metricId: metric.id,
       label: metric.label,
+      valueFormat: items[0] ? items[0].valueFormat : "number",
       improvedCount: improved.length,
       declinedCount: declined.length,
       unchangedCount: unchanged.length,

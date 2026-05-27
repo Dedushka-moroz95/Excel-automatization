@@ -40,6 +40,7 @@
                 unitLabel: row.label,
                 delta: item.delta,
                 impact: item.impact,
+                valueFormat: item.valueFormat || result.valueFormat || "number",
                 comparisonLabel: item.label,
               };
             });
@@ -54,6 +55,7 @@
           unitLabel: row.label,
           delta: result.delta,
           impact: result.impact,
+          valueFormat: result.valueFormat || "number",
           comparisonLabel: lastPeriod.label + " - " + firstPeriod.label,
         }];
       })
@@ -65,6 +67,7 @@
     const targetData = rows.map(function (row) {
       return row.delta;
     });
+    const chartValueFormat = getChartValueFormat(rows);
     const waitForViewport = shouldWaitForViewport(canvas, targetData);
 
     deltaChart = new global.Chart(canvas, {
@@ -144,7 +147,7 @@
                 return row ? row.unitLabel : "";
               },
               label: function (context) {
-                return "Изменение: " + Normalizers.formatNumber(context.parsed.x, 2);
+                return "Изменение: " + Normalizers.formatMetricDelta(context.parsed.x, chartValueFormat, 2);
               },
             },
           },
@@ -160,6 +163,9 @@
             ticks: {
               color: "#9CA3AF",
               padding: 8,
+              callback: function (value) {
+                return Normalizers.formatMetricDelta(Number(value), chartValueFormat, 1);
+              },
               font: {
                 family: "Inter, system-ui, sans-serif",
                 size: 12,
@@ -270,6 +276,14 @@
 
   function prefersReducedMotion() {
     return Boolean(global.matchMedia && global.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+
+  function getChartValueFormat(rows) {
+    const row = rows.find(function (item) {
+      return item.valueFormat === "percent";
+    });
+
+    return row ? "percent" : "number";
   }
 
   App.Charts = {

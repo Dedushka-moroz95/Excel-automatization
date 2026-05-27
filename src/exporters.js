@@ -91,11 +91,11 @@
                   return item.periodId === period.id;
                 })
               : null;
-            output.push(periodValue && periodValue.isNumeric ? periodValue.value : "");
+            output.push(periodValue && periodValue.isNumeric ? Normalizers.formatMetricValue(periodValue.value, periodValue.valueFormat, 2) : "");
           });
         }
 
-        output.push(result && Number.isFinite(result.delta) ? result.delta : "");
+        output.push(result && Number.isFinite(result.delta) ? Normalizers.formatMetricDelta(result.delta, result.valueFormat, 2) : "");
         output.push(result && Number.isFinite(result.deltaPercent) ? result.deltaPercent : "");
         output.push(result ? translateImpact(result.impact) : "");
       });
@@ -198,13 +198,12 @@
       return "";
     }
 
-    const sign = result.delta > 0 ? "+" : "";
     const percent =
       Number.isFinite(result.deltaPercent)
         ? " (" + (result.deltaPercent > 0 ? "+" : "") + Normalizers.formatPercent(result.deltaPercent) + ")"
         : "";
 
-    return sign + Normalizers.formatNumber(result.delta, 2) + percent + " · " + translateImpact(result.impact);
+    return Normalizers.formatMetricDelta(result.delta, result.valueFormat, 2) + percent + " · " + translateImpact(result.impact);
   }
 
   function downloadBlob(content, fileName, mimeType) {

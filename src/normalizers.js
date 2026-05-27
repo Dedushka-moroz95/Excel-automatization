@@ -23,6 +23,15 @@
     return text || fallback;
   }
 
+  function headerLooksPercent(value) {
+    const text = normalizeKey(value);
+    return /%|процент|проц\.|доля|качество|quality|\bqa\b|csat|конверси|conversion|sla|rate|ratio/.test(text);
+  }
+
+  function valueLooksPercent(value) {
+    return toText(value).indexOf("%") !== -1;
+  }
+
   function normalizeNumber(value) {
     if (value === null || value === undefined || value === "") {
       return { value: null, isEmpty: true, isNumeric: false, raw: value };
@@ -124,14 +133,54 @@
     return formatNumber(value, 1) + "%";
   }
 
+  function formatSignedNumber(value, digits) {
+    if (!Number.isFinite(value)) {
+      return "—";
+    }
+
+    const sign = value > 0 ? "+" : "";
+    return sign + formatNumber(value, digits);
+  }
+
+  function formatMetricValue(value, valueFormat, digits) {
+    if (!Number.isFinite(value)) {
+      return "—";
+    }
+
+    if (valueFormat === "percent") {
+      return formatNumber(value, digits === undefined ? 2 : digits) + "%";
+    }
+
+    return formatNumber(value, digits);
+  }
+
+  function formatMetricDelta(value, valueFormat, digits) {
+    const formatted = formatSignedNumber(value, digits === undefined ? 2 : digits);
+
+    if (formatted === "—") {
+      return formatted;
+    }
+
+    if (valueFormat === "percent") {
+      return formatted + " п.п.";
+    }
+
+    return formatted;
+  }
+
   App.Normalizers = {
     toText,
     normalizeKey,
     normalizeHeader,
     normalizeNumber,
+    headerLooksPercent,
+    valueLooksPercent,
     calculatePercentChange,
     formatNumber,
     formatPercent,
+    formatSignedNumber,
+    formatMetricValue,
+    formatMetricDelta,
     isEmptyValue,
   };
 })(window);

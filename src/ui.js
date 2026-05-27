@@ -250,7 +250,7 @@
           '</span><strong class="' +
           deltaClass +
           '">' +
-          Normalizers.formatNumber(item.delta, 2) +
+          Normalizers.formatMetricDelta(item.delta, item.valueFormat, 2) +
           "</strong></li>"
         );
       })
@@ -375,7 +375,7 @@
       return '<td class="warn-text">нет данных</td>';
     }
 
-    return '<td class="number">' + Normalizers.formatNumber(item.value, 2) + "</td>";
+    return '<td class="number">' + Normalizers.formatMetricValue(item.value, item.valueFormat, 2) + "</td>";
   }
 
   function resultCell(result) {
@@ -390,21 +390,12 @@
       '<td class="number"><div class="result-cell"><strong class="' +
       tone +
       '">' +
-      signedNumber(result.delta) +
+      Normalizers.formatMetricDelta(result.delta, result.valueFormat, 2) +
       "</strong><span>" +
       impactLabel(result.impact) +
       percent +
       "</span></div></td>"
     );
-  }
-
-  function signedNumber(value) {
-    if (!Number.isFinite(value)) {
-      return "—";
-    }
-
-    const sign = value > 0 ? "+" : "";
-    return sign + Normalizers.formatNumber(value, 2);
   }
 
   function signedPercent(value) {
