@@ -8,7 +8,6 @@
     ".preview-panel",
     ".mapper-controls > .field",
     ".metric-toolbar",
-    ".metric-row",
     ".action-row",
     ".data-quality-inline",
     ".empty-state",
