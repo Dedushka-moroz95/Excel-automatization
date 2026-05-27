@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Операционная аналитика</title>
+    <link rel="stylesheet" href="./style.css" />
+    <script src="./vendor/xlsx.full.min.js" defer></script>
+    <script src="./vendor/chart.umd.min.js" defer></script>
+    <script src="./vendor/exceljs.min.js" defer></script>
+    <script src="./src/appState.js" defer></script>
+    <script src="./src/normalizers.js" defer></script>
+    <script src="./src/excelReader.js" defer></script>
+    <script src="./src/comparator.js" defer></script>
+    <script src="./src/analytics.js" defer></script>
+    <script src="./src/exporters.js" defer></script>
+    <script src="./src/charts.js" defer></script>
+    <script src="./src/ui.js" defer></script>
+    <script src="./main.js" defer></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="hero-copy">
+        <p class="eyebrow">Локальный инструмент</p>
+        <h1>Операционная аналитика</h1>
+        <p class="hero-lead">
+          Сравнивайте показатели юнитов между несколькими Excel-периодами без загрузки данных в сеть.
+        </p>
+      </div>
+      <div class="hero-panel">
+        <span class="hero-panel__label">Статус</span>
+        <div class="header-status" id="dependencyStatus">Проверка библиотек</div>
+        <span class="privacy-chip">100% локальная обработка</span>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section class="workspace-section upload-grid" aria-labelledby="uploadTitle">
+        <div class="section-title">
+          <div class="step-heading">
+            <span class="step-index">01</span>
+            <div>
+              <p class="section-kicker">Upload files</p>
+              <h2 id="uploadTitle">Файлы периодов</h2>
+            </div>
+          </div>
+          <span class="section-subtitle">Выберите общий срез или последовательную динамику</span>
+        </div>
+
+        <div class="period-toolbar">
+          <label class="field comparison-mode-field">
+            <span>Формат сравнения</span>
+            <select id="comparisonModeSelect">
+              <option value="endpoint">Итоговый: последний минус первый</option>
+              <option value="sequential">Последовательный: каждый к предыдущему</option>
+            </select>
+          </label>
+          <button id="addPeriodButton" class="button button-secondary" type="button">+ Период</button>
+        </div>
+
+        <div id="periodList" class="period-list"></div>
+      </section>
+
+      <section class="workspace-section preview-grid" aria-labelledby="previewTitle">
+        <div class="section-title section-title--wide">
+          <div class="step-heading">
+            <span class="step-index">02</span>
+            <div>
+              <p class="section-kicker">Data preview</p>
+              <h2 id="previewTitle">Preview таблиц</h2>
+            </div>
+          </div>
+          <span class="section-subtitle">Первые строки и найденные заголовки</span>
+        </div>
+        <div id="previewList" class="preview-list"></div>
+      </section>
+
+      <section class="workspace-section mapper-grid" aria-labelledby="mapperTitle">
+        <div class="section-title section-title--wide">
+          <div class="step-heading">
+            <span class="step-index">03</span>
+            <div>
+              <p class="section-kicker">Configure mapping</p>
+              <h2 id="mapperTitle">Сопоставление колонок</h2>
+            </div>
+          </div>
+          <span class="section-subtitle">Юнит обязателен, показатели добавляются вручную</span>
+        </div>
+
+        <div id="mapperControls" class="mapper-controls">
+          <div class="empty-state">Загрузите файлы, чтобы выбрать колонки с юнитами</div>
+        </div>
+
+        <div class="metric-toolbar">
+          <button id="addMetricButton" class="button button-secondary" type="button" disabled>
+            + Показатель
+          </button>
+        </div>
+
+        <div id="metricList" class="metric-list empty-state">
+          Выберите колонки с юнитами, чтобы добавить показатели
+        </div>
+
+        <div class="action-row">
+          <button id="analyzeButton" class="button button-primary" type="button" disabled>
+            Рассчитать сравнение
+          </button>
+          <button id="exportCsvButton" class="button button-secondary" type="button" disabled>
+            CSV
+          </button>
+          <button id="exportExcelButton" class="button button-secondary" type="button" disabled>
+            Excel
+          </button>
+        </div>
+      </section>
+
+      <section class="workspace-section" aria-labelledby="warningsTitle">
+        <div class="section-title">
+          <div class="step-heading">
+            <span class="step-index">04</span>
+            <div>
+              <p class="section-kicker">Data quality</p>
+              <h2 id="warningsTitle">Проверки данных</h2>
+            </div>
+          </div>
+        </div>
+        <div id="warningsPanel" class="warnings-panel empty-state">Ошибок пока нет</div>
+      </section>
+
+      <section class="workspace-section dashboard-layout" aria-labelledby="dashboardTitle">
+        <div class="section-title section-title--wide">
+          <div class="step-heading">
+            <span class="step-index">05</span>
+            <div>
+              <p class="section-kicker">View analytics</p>
+              <h2 id="dashboardTitle">Dashboard</h2>
+            </div>
+          </div>
+          <label class="field field-inline">
+            <span>График</span>
+            <select id="chartMetricSelect" disabled></select>
+          </label>
+        </div>
+        <div id="summaryCards" class="summary-grid empty-state">Результаты появятся после расчета</div>
+        <div class="chart-panel">
+          <canvas id="deltaChart" height="120"></canvas>
+        </div>
+        <div id="moversPanel" class="movers-grid"></div>
+      </section>
+
+      <section class="workspace-section" aria-labelledby="resultsTitle">
+        <div class="section-title">
+          <div class="step-heading">
+            <span class="step-index">06</span>
+            <div>
+              <p class="section-kicker">Details & export</p>
+              <h2 id="resultsTitle">Таблица результатов</h2>
+            </div>
+          </div>
+        </div>
+        <div id="resultsTable" class="results-panel empty-state">Нет рассчитанных данных</div>
+      </section>
+    </main>
+  </body>
+</html>
