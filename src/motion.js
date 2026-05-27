@@ -11,6 +11,7 @@
     ".metric-toolbar",
     ".metric-row",
     ".action-row",
+    ".data-quality-inline",
     ".empty-state",
     ".warning-item",
     ".summary-card",
@@ -48,7 +49,7 @@
 
     elements.forEach(function (element, index) {
       element.classList.add("reveal-item");
-      element.style.setProperty("--motion-order", String(Math.min(index % 8, 7)));
+      element.style.setProperty("--motion-order", getMotionOrder(element, index));
 
       if (prefersReducedMotion() || !revealObserver) {
         revealNow(element);
@@ -148,6 +149,14 @@
     const viewportHeight = global.innerHeight || document.documentElement.clientHeight;
 
     return rect.top < viewportHeight * 0.94 && rect.bottom > viewportHeight * 0.02;
+  }
+
+  function getMotionOrder(element, index) {
+    if (element.classList.contains("period-card")) {
+      return "0";
+    }
+
+    return String(Math.min(index % 8, 7));
   }
 
   App.Motion = {

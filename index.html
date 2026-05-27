@@ -100,34 +100,27 @@
         </div>
 
         <div class="action-row">
-          <button id="analyzeButton" class="button button-primary" type="button" disabled>
-            Сравнить
-          </button>
-          <button id="exportCsvButton" class="button button-secondary" type="button" disabled>
-            CSV
-          </button>
-          <button id="exportExcelButton" class="button button-secondary" type="button" disabled>
-            Excel
-          </button>
-        </div>
-      </section>
-
-      <section class="workspace-section" aria-labelledby="warningsTitle">
-        <div class="section-title">
-          <div class="step-heading">
-            <span class="step-index">04</span>
-            <div>
-              <h2 id="warningsTitle">Проверки данных</h2>
-            </div>
+          <div class="action-buttons">
+            <button id="analyzeButton" class="button button-primary" type="button" disabled>
+              Сравнить
+            </button>
+            <button id="exportCsvButton" class="button button-secondary" type="button" disabled>
+              CSV
+            </button>
+            <button id="exportExcelButton" class="button button-secondary" type="button" disabled>
+              Excel
+            </button>
+          </div>
+          <div id="warningsPanel" class="data-quality-inline" data-variant="inline-quality">
+            Проверок пока нет
           </div>
         </div>
-        <div id="warningsPanel" class="warnings-panel empty-state">Ошибок пока нет</div>
       </section>
 
       <section class="workspace-section dashboard-layout" aria-labelledby="dashboardTitle">
         <div class="section-title section-title--wide">
           <div class="step-heading">
-            <span class="step-index">05</span>
+            <span class="step-index">04</span>
             <div>
               <h2 id="dashboardTitle">Dashboard</h2>
             </div>
@@ -147,7 +140,7 @@
       <section class="workspace-section" aria-labelledby="resultsTitle">
         <div class="section-title">
           <div class="step-heading">
-            <span class="step-index">06</span>
+            <span class="step-index">05</span>
             <div>
               <h2 id="resultsTitle">Таблица результатов</h2>
             </div>

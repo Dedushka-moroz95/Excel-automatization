@@ -86,13 +86,18 @@
   }
 
   function renderWarnings(container, warnings) {
+    if (container.dataset.variant === "inline-quality") {
+      renderInlineQuality(container, warnings);
+      return;
+    }
+
     if (!warnings.length) {
-      container.className = "warnings-panel";
+      setClassName(container, "warnings-panel");
       container.innerHTML = '<div class="warning-item ok">Критичных проблем не найдено</div>';
       return;
     }
 
-    container.className = "warnings-panel";
+    setClassName(container, "warnings-panel");
     container.innerHTML = warnings
       .map(function (warning) {
         return (
@@ -104,6 +109,72 @@
         );
       })
       .join("");
+  }
+
+  function renderInlineQuality(container, warnings) {
+    const hasFiles = container.dataset.hasFiles === "true";
+    const errorCount = warnings.filter(function (warning) {
+      return warning.type === "error";
+    }).length;
+    const warnCount = warnings.length - errorCount;
+    const tone = !hasFiles ? "neutral" : errorCount ? "error" : warnings.length ? "warn" : "ok";
+    const title = !hasFiles ? "Проверок пока нет" : errorCount ? "Нужна проверка" : warnings.length ? "Есть предупреждения" : "Файлы готовы";
+    const summary = !hasFiles
+      ? "Загрузите файлы, чтобы увидеть статус"
+      : errorCount
+        ? "Ошибок: " + errorCount + ", предупреждений: " + warnCount
+        : warnings.length
+          ? "Предупреждений: " + warnings.length
+          : "Критичных проблем не найдено";
+
+    setClassName(container, "data-quality-inline " + tone);
+    container.dataset.variant = "inline-quality";
+    container.innerHTML =
+      '<div class="quality-main">' +
+      '<span class="quality-dot"></span>' +
+      "<div>" +
+      "<strong>Качество данных</strong>" +
+      "<span>" +
+      escapeHtml(title + ". " + summary) +
+      "</span>" +
+      "</div></div>" +
+      qualityDetails(warnings);
+  }
+
+  function qualityDetails(warnings) {
+    if (!warnings.length) {
+      return "";
+    }
+
+    const visibleWarnings = warnings.slice(0, 5)
+      .map(function (warning) {
+        return (
+          '<li class="quality-item ' +
+          escapeHtml(warning.type || "warn") +
+          '">' +
+          escapeHtml(warning.message) +
+          "</li>"
+        );
+      })
+      .join("");
+    const restCount = warnings.length > 5 ? '<li class="quality-more">Еще ' + (warnings.length - 5) + "</li>" : "";
+
+    return (
+      '<details class="quality-details">' +
+      "<summary>Детали</summary>" +
+      '<ul class="quality-list">' +
+      visibleWarnings +
+      restCount +
+      "</ul></details>"
+    );
+  }
+
+  function setClassName(container, className) {
+    const motionClasses = ["reveal-item", "is-visible"].filter(function (item) {
+      return container.classList.contains(item);
+    });
+
+    container.className = className + (motionClasses.length ? " " + motionClasses.join(" ") : "");
   }
 
   function renderSummary(container, analytics) {

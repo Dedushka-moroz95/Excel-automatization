@@ -221,7 +221,7 @@
     renderColumnMapping();
     renderMetrics();
     renderAnalysis();
-    App.UI.renderWarnings(dom.warningsPanel, collectWarnings());
+    renderWarningsPanel();
     refreshMotion();
   }
 
@@ -468,7 +468,7 @@
     clearAnalysis();
     renderMetrics();
     renderAnalysis();
-    App.UI.renderWarnings(dom.warningsPanel, collectWarnings());
+    renderWarningsPanel();
   }
 
   function handleMetricClick(event) {
@@ -576,6 +576,17 @@
     }
 
     App.Motion.refresh();
+  }
+
+  function renderWarningsPanel() {
+    dom.warningsPanel.dataset.hasFiles = hasAnyLoadedPeriod() ? "true" : "false";
+    App.UI.renderWarnings(dom.warningsPanel, collectWarnings());
+  }
+
+  function hasAnyLoadedPeriod() {
+    return state.periods.some(function (period) {
+      return Boolean(period.table);
+    });
   }
 
   function renderChart() {
