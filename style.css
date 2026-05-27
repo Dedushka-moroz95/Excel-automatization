@@ -16,6 +16,7 @@
   --shadow-soft: 0 18px 44px rgba(31, 31, 36, 0.06);
   --container: 1480px;
   --ease: 0.24s ease;
+  --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 * {
@@ -24,6 +25,8 @@
 
 html {
   background: var(--bg);
+  scroll-behavior: smooth;
+  scroll-padding-top: 24px;
 }
 
 body {
@@ -184,6 +187,10 @@ input[type="file"] {
   border-radius: var(--radius-xl);
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7);
+  transition:
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    background-color 220ms ease;
 }
 
 .workspace-section:hover {
@@ -281,11 +288,19 @@ input[type="file"] {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--card-soft);
+  transition:
+    transform 220ms var(--ease-premium),
+    border-color 220ms ease,
+    background-color 220ms ease,
+    box-shadow 220ms ease;
 }
 
 .period-card:hover {
+  --hover-y: -2px;
+  transform: translateY(-2px);
   border-color: #d1d5db;
   background: #fff;
+  box-shadow: 0 14px 32px rgba(31, 31, 36, 0.05);
 }
 
 .period-card__top {
@@ -434,6 +449,18 @@ input[type="file"] {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--card);
+  transition:
+    transform 220ms var(--ease-premium),
+    border-color 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.preview-panel:hover,
+.results-panel:hover {
+  --hover-y: -1px;
+  transform: translateY(-1px);
+  border-color: #d1d5db;
+  box-shadow: 0 14px 32px rgba(31, 31, 36, 0.045);
 }
 
 .table-meta {
@@ -460,6 +487,26 @@ input[type="file"] {
 .table-scroll {
   max-height: 420px;
   overflow: auto;
+  overscroll-behavior: contain;
+  scroll-behavior: smooth;
+  scrollbar-color: #d1d5db transparent;
+  scrollbar-width: thin;
+}
+
+.table-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.table-scroll::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background: #d1d5db;
+  background-clip: padding-box;
+}
+
+.table-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 table {
@@ -624,6 +671,12 @@ input:disabled {
   transform: translateY(-1px);
 }
 
+.button:active:not(:disabled),
+.icon-button:active,
+.period-remove:active {
+  transform: translateY(0) scale(0.99);
+}
+
 .button-primary {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-soft) 100%);
   color: var(--text);
@@ -660,6 +713,11 @@ input:disabled {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--card-soft);
+  transition:
+    transform 220ms var(--ease-premium),
+    border-color 220ms ease,
+    background-color 220ms ease,
+    box-shadow 220ms ease;
 }
 
 .metric-row--multi {
@@ -675,8 +733,11 @@ input:disabled {
 }
 
 .metric-row:hover {
+  --hover-y: -2px;
+  transform: translateY(-2px);
   border-color: #d1d5db;
   background: #fff;
+  box-shadow: 0 14px 32px rgba(31, 31, 36, 0.05);
 }
 
 .metric-name {
@@ -740,6 +801,15 @@ input:disabled {
   color: #7c4a03;
   font-size: 14px;
   font-weight: 650;
+  transition:
+    transform 200ms var(--ease-premium),
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+
+.warning-item:hover {
+  --hover-y: -1px;
+  transform: translateY(-1px);
 }
 
 .warning-item::before {
@@ -788,6 +858,11 @@ input:disabled {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--card-soft);
+  transition:
+    transform 240ms var(--ease-premium),
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    background-color 220ms ease;
 }
 
 .summary-card:first-child {
@@ -798,7 +873,10 @@ input:disabled {
 .summary-card:hover,
 .mover-card:hover,
 .chart-panel:hover {
+  --hover-y: -2px;
   transform: translateY(-2px);
+  border-color: #d1d5db;
+  box-shadow: 0 16px 36px rgba(31, 31, 36, 0.055);
 }
 
 .summary-card span {
@@ -828,6 +906,10 @@ input:disabled {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--card-soft);
+  transition:
+    transform 240ms var(--ease-premium),
+    border-color 220ms ease,
+    box-shadow 220ms ease;
 }
 
 .chart-panel canvas {
@@ -847,6 +929,11 @@ input:disabled {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--card-soft);
+  transition:
+    transform 240ms var(--ease-premium),
+    border-color 220ms ease,
+    box-shadow 220ms ease,
+    background-color 220ms ease;
 }
 
 .mover-card > h3 {
@@ -1003,6 +1090,85 @@ input:disabled {
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 800;
+}
+
+.motion-ready .reveal-item {
+  --motion-y: 18px;
+  --hover-y: 0px;
+  opacity: 0;
+  transform: translateY(calc(var(--motion-y) + var(--hover-y)));
+  transition:
+    opacity 420ms var(--ease-premium),
+    transform 420ms var(--ease-premium),
+    border-color 220ms ease,
+    background-color 220ms ease,
+    box-shadow 220ms ease;
+  transition-delay: calc(var(--motion-order, 0) * 36ms);
+  will-change: opacity, transform;
+}
+
+.motion-ready .reveal-item.is-visible {
+  --motion-y: 0px;
+  opacity: 1;
+}
+
+.motion-ready .reveal-item.is-visible:hover {
+  transition-delay: 0ms;
+}
+
+.motion-ready .summary-card.reveal-item,
+.motion-ready .mover-card.reveal-item,
+.motion-ready .chart-panel.reveal-item {
+  transition-duration: 460ms, 460ms, 220ms, 220ms, 220ms;
+}
+
+@media (min-width: 900px) {
+  .workspace-section > .section-title {
+    position: sticky;
+    top: 12px;
+    z-index: 9;
+    padding: 12px;
+    margin: -12px;
+    border: 1px solid rgba(229, 231, 235, 0.76);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: 0 10px 28px rgba(31, 31, 36, 0.045);
+    backdrop-filter: blur(18px);
+  }
+
+  .period-toolbar,
+  .action-row {
+    position: sticky;
+    top: 84px;
+    z-index: 8;
+    padding: 12px;
+    margin: -12px;
+    border: 1px solid rgba(229, 231, 235, 0.76);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: 0 10px 28px rgba(31, 31, 36, 0.045);
+    backdrop-filter: blur(18px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+
+  .motion-ready .reveal-item {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 @media (max-width: 1180px) {

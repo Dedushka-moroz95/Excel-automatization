@@ -122,7 +122,16 @@
   }
 
   function summaryCard(label, value) {
-    return '<div class="summary-card"><span>' + escapeHtml(label) + "</span><strong>" + value + "</strong></div>";
+    const numericValue = Number(value) || 0;
+    return (
+      '<div class="summary-card"><span>' +
+      escapeHtml(label) +
+      '</span><strong data-count-to="' +
+      numericValue +
+      '">' +
+      numericValue +
+      "</strong></div>"
+    );
   }
 
   function renderMovers(container, analytics) {

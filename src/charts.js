@@ -2,16 +2,14 @@
   const App = (global.OperationalAnalytics = global.OperationalAnalytics || {});
   const Normalizers = App.Normalizers;
   let deltaChart = null;
+  let chartObserver = null;
 
   function renderDeltaChart(canvas, comparison, metric) {
     if (!canvas || !global.Chart) {
       return;
     }
 
-    if (deltaChart) {
-      deltaChart.destroy();
-      deltaChart = null;
-    }
+    destroyChart();
 
     if (!comparison || !metric) {
       clearCanvas(canvas);
@@ -64,6 +62,10 @@
       })
       .slice(0, 15)
       .reverse();
+    const targetData = rows.map(function (row) {
+      return row.delta;
+    });
+    const waitForViewport = shouldWaitForViewport(canvas, targetData);
 
     deltaChart = new global.Chart(canvas, {
       type: "bar",
@@ -74,9 +76,7 @@
         datasets: [
           {
             label: metric.label + " " + (isSequential ? "последовательная динамика" : lastPeriod.label + " - " + firstPeriod.label),
-            data: rows.map(function (row) {
-              return row.delta;
-            }),
+            data: waitForViewport ? targetData.map(function () { return 0; }) : targetData,
             backgroundColor: function (context) {
               const chart = context.chart;
               const chartArea = chart.chartArea;
@@ -187,11 +187,15 @@
           },
         },
         animation: {
-          duration: 650,
+          duration: waitForViewport ? 0 : 460,
           easing: "easeOutQuart",
         },
       },
     });
+
+    if (waitForViewport) {
+      animateWhenVisible(canvas, targetData);
+    }
   }
 
   function createHorizontalGradient(context, chartArea, fromColor, toColor) {
@@ -204,6 +208,68 @@
   function clearCanvas(canvas) {
     const context = canvas.getContext("2d");
     context.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function destroyChart() {
+    disconnectChartObserver();
+
+    if (deltaChart) {
+      deltaChart.destroy();
+      deltaChart = null;
+    }
+  }
+
+  function shouldWaitForViewport(canvas, targetData) {
+    return Boolean(
+      targetData.length &&
+        !prefersReducedMotion() &&
+        "IntersectionObserver" in global &&
+        !isNearViewport(canvas)
+    );
+  }
+
+  function animateWhenVisible(canvas, targetData) {
+    const target = canvas.closest(".chart-panel") || canvas;
+
+    chartObserver = new IntersectionObserver(function (entries) {
+      const isVisible = entries.some(function (entry) {
+        return entry.isIntersecting;
+      });
+
+      if (!isVisible || !deltaChart || deltaChart.canvas !== canvas) {
+        return;
+      }
+
+      deltaChart.data.datasets[0].data = targetData;
+      deltaChart.options.animation.duration = 460;
+      deltaChart.options.animation.easing = "easeOutQuart";
+      deltaChart.update();
+      disconnectChartObserver();
+    }, {
+      root: null,
+      rootMargin: "0px 0px -12% 0px",
+      threshold: 0.22,
+    });
+
+    chartObserver.observe(target);
+  }
+
+  function disconnectChartObserver() {
+    if (chartObserver) {
+      chartObserver.disconnect();
+      chartObserver = null;
+    }
+  }
+
+  function isNearViewport(element) {
+    const rect = element.getBoundingClientRect();
+    const viewportHeight = global.innerHeight || document.documentElement.clientHeight;
+
+    return rect.top < viewportHeight * 0.86 && rect.bottom > viewportHeight * 0.08;
+  }
+
+  function prefersReducedMotion() {
+    return Boolean(global.matchMedia && global.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }
 
   App.Charts = {

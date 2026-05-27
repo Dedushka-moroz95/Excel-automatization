@@ -10,6 +10,7 @@
     cacheDom();
     checkDependencies();
     bindEvents();
+    initMotion();
     renderAll();
   }
 
@@ -221,6 +222,7 @@
     renderMetrics();
     renderAnalysis();
     App.UI.renderWarnings(dom.warningsPanel, collectWarnings());
+    refreshMotion();
   }
 
   function renderPeriodUploads() {
@@ -559,6 +561,21 @@
     const hasComparison = Boolean(state.comparison);
     dom.exportCsvButton.disabled = !hasComparison;
     dom.exportExcelButton.disabled = !hasComparison;
+    refreshMotion();
+  }
+
+  function initMotion() {
+    if (App.Motion) {
+      App.Motion.init();
+    }
+  }
+
+  function refreshMotion() {
+    if (!App.Motion) {
+      return;
+    }
+
+    App.Motion.refresh();
   }
 
   function renderChart() {
