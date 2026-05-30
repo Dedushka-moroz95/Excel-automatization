@@ -86,18 +86,18 @@
               const row = rows[context.dataIndex];
 
               if (!chartArea || !row) {
-                return "rgba(255, 221, 45, 0.85)";
+                return "rgba(20, 184, 166, 0.86)";
               }
 
               if (row.impact === "bad") {
-                return createHorizontalGradient(chart.ctx, chartArea, "#FCA5A5", "#DC2626");
+                return createHorizontalGradient(chart.ctx, chartArea, "#FDA4AF", "#E11D48");
               }
 
               if (row.impact === "neutral") {
-                return createHorizontalGradient(chart.ctx, chartArea, "#E5E7EB", "#9CA3AF");
+                return createHorizontalGradient(chart.ctx, chartArea, "#E2E8F0", "#94A3B8");
               }
 
-              return createHorizontalGradient(chart.ctx, chartArea, "#FFE870", "#FFDD2D");
+              return createHorizontalGradient(chart.ctx, chartArea, "#86EFAC", "#16A34A");
             },
             borderRadius: 14,
             borderSkipped: false,
@@ -124,7 +124,7 @@
             display: false,
           },
           tooltip: {
-            backgroundColor: "#1F1F24",
+            backgroundColor: "#18212F",
             borderColor: "rgba(255, 255, 255, 0.08)",
             borderWidth: 1,
             caretPadding: 10,
@@ -161,7 +161,7 @@
               display: false,
             },
             ticks: {
-              color: "#9CA3AF",
+              color: "#94A3B8",
               padding: 8,
               callback: function (value) {
                 return Normalizers.formatMetricDelta(Number(value), chartValueFormat, 1);
@@ -182,7 +182,7 @@
             },
             ticks: {
               autoSkip: false,
-              color: "#6B7280",
+              color: "#667085",
               padding: 10,
               font: {
                 family: "Inter, system-ui, sans-serif",

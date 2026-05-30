@@ -56,13 +56,13 @@
 
     sheet.mergeCells("A1:F1");
     sheet.getCell("A1").value = "Dashboard";
-    sheet.getCell("A1").font = { bold: true, size: 22, color: { argb: "FF1F1F24" } };
+    sheet.getCell("A1").font = { bold: true, size: 22, color: { argb: "FF18212F" } };
     sheet.getCell("A1").alignment = { vertical: "middle" };
     sheet.getRow(1).height = 30;
 
     sheet.mergeCells("A2:F2");
     sheet.getCell("A2").value = "График динамики: " + metricLabel;
-    sheet.getCell("A2").font = { bold: true, size: 12, color: { argb: "FF6B7280" } };
+    sheet.getCell("A2").font = { bold: true, size: 12, color: { argb: "FF667085" } };
 
     sheet.addRow([]);
     sheet.addRow(["Показатель", "Значение"]);
@@ -308,17 +308,17 @@
     context.fillStyle = "#ffffff";
     context.fillRect(0, 0, width, height);
 
-    context.fillStyle = "#1F1F24";
+    context.fillStyle = "#18212F";
     context.font = "700 28px Inter, Segoe UI, Arial, sans-serif";
     context.fillText("Динамика показателя", 32, 42);
 
-    context.fillStyle = "#6B7280";
+    context.fillStyle = "#667085";
     context.font = "600 16px Inter, Segoe UI, Arial, sans-serif";
     context.fillText(metric.label || "Показатель", 32, 68);
 
-    drawRoundedRect(context, padding.left, padding.top - 20, chartWidth, chartHeight + 40, 22, "#F9FAFB");
+    drawRoundedRect(context, padding.left, padding.top - 20, chartWidth, chartHeight + 40, 22, "#F8FAFC");
 
-    context.strokeStyle = "#D1D5DB";
+    context.strokeStyle = "#CBD5E1";
     context.lineWidth = 1;
     context.beginPath();
     context.moveTo(zeroX, padding.top - 10);
@@ -332,7 +332,7 @@
       const barWidth = Math.max(4, Math.abs(valueX - zeroX));
       const barColor = getExportBarColor(row.impact);
 
-      context.fillStyle = "#6B7280";
+      context.fillStyle = "#667085";
       context.font = "700 13px Inter, Segoe UI, Arial, sans-serif";
       context.textAlign = "right";
       context.textBaseline = "middle";
@@ -353,7 +353,7 @@
       });
     });
 
-    context.fillStyle = "#9CA3AF";
+    context.fillStyle = "#94A3B8";
     context.font = "600 12px Inter, Segoe UI, Arial, sans-serif";
     context.textAlign = "left";
     context.fillText("Топ изменений по модулю значения. График сформирован локально в браузере.", 32, height - 26);
@@ -361,7 +361,7 @@
 
   function drawValueLabel(context, options) {
     const textWidth = context.measureText(options.text).width;
-    const defaultColor = options.impact === "bad" ? "#DC2626" : options.impact === "neutral" ? "#6B7280" : "#1F1F24";
+    const defaultColor = options.impact === "bad" ? "#E11D48" : options.impact === "neutral" ? "#667085" : "#18212F";
     let textX;
     let textAlign;
     let textColor = defaultColor;
@@ -434,23 +434,23 @@
 
   function getExportBarColor(impact) {
     if (impact === "bad") {
-      return "#DC2626";
+      return "#E11D48";
     }
 
     if (impact === "neutral") {
-      return "#9CA3AF";
+      return "#94A3B8";
     }
 
-    return "#FFDD2D";
+    return "#16A34A";
   }
 
   function styleHeaderRow(sheet, rowNumber) {
     const header = sheet.getRow(rowNumber || 1);
-    header.font = { bold: true, color: { argb: "FF1F1F24" } };
+    header.font = { bold: true, color: { argb: "FF18212F" } };
     header.fill = {
       type: "pattern",
       pattern: "solid",
-      fgColor: { argb: "FFFFDD2D" },
+      fgColor: { argb: "FFCCFBF1" },
     };
     header.alignment = { vertical: "middle" };
   }
