@@ -8,6 +8,13 @@
     missing: "Отсутствующие",
     duplicates: "Дубли",
   };
+  const EXCEL_FORMATS = {
+    number: "#,##0.00",
+    signedNumber: "+#,##0.00;-#,##0.00;0.00",
+    percent: "0.0%",
+    signedPercent: "+0.0%;-0.0%;0.0%",
+    points: '+0.0 "п.п.";-0.0 "п.п.";0.0 "п.п."',
+  };
 
   function exportCsv(comparison, metrics) {
     const rows = buildFlatRows(comparison, metrics);
@@ -151,6 +158,132 @@
     return rows;
   }
 
+  function buildExcelRows(comparison, metrics) {
+    const header = ["Юнит"];
+    const columnFormats = ["text"];
+    const isSequential = comparison.comparisonMode === "sequential";
+    const showTimeline = comparison.periods.length > 2 && !isSequential;
+
+    metrics.forEach(function (metric) {
+      const metricFormat = getMetricValueFormat(comparison, metric.id);
+
+      if (isSequential) {
+        comparison.comparisonPairs.forEach(function (pair) {
+          header.push(metric.label + " - " + pair.label);
+          columnFormats.push("text");
+        });
+        return;
+      }
+
+      if (showTimeline) {
+        comparison.periods.forEach(function (period) {
+          header.push(metric.label + " - " + period.label);
+          columnFormats.push(metricFormat === "percent" ? "percent" : "number");
+        });
+      }
+
+      header.push(metric.label + " - итоговая динамика");
+      columnFormats.push(metricFormat === "percent" ? "points" : "signedNumber");
+      header.push(metric.label + " - динамика %");
+      columnFormats.push("signedPercent");
+      header.push(metric.label + " - статус");
+      columnFormats.push("text");
+    });
+
+    const rows = [header];
+
+    comparison.rows.forEach(function (row) {
+      const output = [row.label];
+
+      metrics.forEach(function (metric) {
+        const metricFormat = getMetricValueFormat(comparison, metric.id);
+        const result = row.metrics.find(function (item) {
+          return item.metricId === metric.id;
+        });
+
+        if (isSequential) {
+          comparison.comparisonPairs.forEach(function (pair) {
+            const item = result
+              ? result.comparisons.find(function (comparisonItem) {
+                  return comparisonItem.fromPeriodId === pair.fromPeriodId && comparisonItem.toPeriodId === pair.toPeriodId;
+                })
+              : null;
+            output.push(formatResultForExport(item));
+          });
+          return;
+        }
+
+        if (showTimeline) {
+          comparison.periods.forEach(function (period) {
+            const periodValue = result
+              ? result.periodValues.find(function (item) {
+                  return item.periodId === period.id;
+                })
+              : null;
+            output.push(formatExcelMetricValue(periodValue, metricFormat));
+          });
+        }
+
+        output.push(result && Number.isFinite(result.delta) ? result.delta : "");
+        output.push(result && Number.isFinite(result.deltaPercent) ? result.deltaPercent / 100 : "");
+        output.push(result ? translateImpact(result.impact) : "");
+      });
+
+      rows.push(output);
+    });
+
+    return {
+      rows: rows,
+      columnFormats: columnFormats,
+    };
+  }
+
+  function getMetricValueFormat(comparison, metricId) {
+    for (let rowIndex = 0; rowIndex < comparison.rows.length; rowIndex += 1) {
+      const result = comparison.rows[rowIndex].metrics.find(function (item) {
+        return item.metricId === metricId;
+      });
+
+      if (result && result.valueFormat) {
+        return result.valueFormat;
+      }
+    }
+
+    return "number";
+  }
+
+  function formatExcelMetricValue(periodValue, metricFormat) {
+    if (!periodValue || !periodValue.isNumeric || !Number.isFinite(periodValue.value)) {
+      return "";
+    }
+
+    if ((periodValue.valueFormat || metricFormat) === "percent") {
+      return periodValue.value / 100;
+    }
+
+    return periodValue.value;
+  }
+
+  function applyExcelColumnFormats(sheet, columnFormats) {
+    sheet.eachRow({ includeEmpty: false }, function (row, rowNumber) {
+      if (rowNumber === 1) {
+        return;
+      }
+
+      columnFormats.forEach(function (format, index) {
+        const excelFormat = EXCEL_FORMATS[format];
+
+        if (!excelFormat) {
+          return;
+        }
+
+        const cell = row.getCell(index + 1);
+        cell.numFmt = excelFormat;
+        cell.alignment = { vertical: "middle", horizontal: "right" };
+      });
+    });
+  }
+
   function fillSummarySheet(sheet, analytics) {
     sheet.columns = [
       { header: "Показатель", key: "name", width: 28 },
@@ -170,16 +303,24 @@
   }
 
   function fillComparisonSheet(workbook, sheet, comparison, metrics, chartMetric) {
+    const tableData = buildExcelRows(comparison, metrics);
     const chartDataUrl = buildDashboardChartImage(comparison, chartMetric);
     const hasChartImage = Boolean(chartDataUrl && typeof workbook.addImage === "function");
-    const tableStartRow = hasChartImage ? 34 : 3;
+    const tableStartRow = 1;
+
+    sheet.addRows(tableData.rows);
+    styleHeaderRow(sheet, tableStartRow);
+    applyExcelColumnFormats(sheet, tableData.columnFormats);
+    sheet.getColumn(1).width = 28;
 
     if (hasChartImage) {
-      sheet.mergeCells("A1:H1");
-      sheet.getCell("A1").value = "График динамики: " + (chartMetric ? chartMetric.label : "Показатель");
-      sheet.getCell("A1").font = { bold: true, size: 18, color: { argb: "FF18212F" } };
-      sheet.getCell("A1").alignment = { vertical: "middle" };
-      sheet.getRow(1).height = 28;
+      const chartTitleRow = sheet.rowCount + 3;
+
+      sheet.mergeCells("A" + chartTitleRow + ":H" + chartTitleRow);
+      sheet.getCell("A" + chartTitleRow).value = "График динамики: " + (chartMetric ? chartMetric.label : "Показатель");
+      sheet.getCell("A" + chartTitleRow).font = { bold: true, size: 18, color: { argb: "FF18212F" } };
+      sheet.getCell("A" + chartTitleRow).alignment = { vertical: "middle" };
+      sheet.getRow(chartTitleRow).height = 28;
 
       const imageId = workbook.addImage({
         base64: chartDataUrl,
@@ -187,21 +328,15 @@
       });
 
       sheet.addImage(imageId, {
-        tl: { col: 0, row: 2 },
+        tl: { col: 0, row: chartTitleRow },
         ext: { width: 980, height: 500 },
       });
     } else {
-      sheet.mergeCells("A1:H1");
-      sheet.getCell("A1").value = "График недоступен для экспорта";
-      sheet.getCell("A1").font = { bold: true, size: 14, color: { argb: "FF667085" } };
+      const chartMessageRow = sheet.rowCount + 2;
+      sheet.mergeCells("A" + chartMessageRow + ":H" + chartMessageRow);
+      sheet.getCell("A" + chartMessageRow).value = "График недоступен для экспорта";
+      sheet.getCell("A" + chartMessageRow).font = { bold: true, size: 14, color: { argb: "FF667085" } };
     }
-
-    while (sheet.rowCount < tableStartRow - 1) {
-      sheet.addRow([]);
-    }
-
-    sheet.addRows(buildFlatRows(comparison, metrics));
-    styleHeaderRow(sheet, tableStartRow);
   }
 
   function fillMissingSheet(sheet, comparison) {

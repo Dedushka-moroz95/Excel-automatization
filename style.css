@@ -791,6 +791,17 @@ input:disabled {
   gap: 12px;
 }
 
+.results-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.results-actions .button {
+  min-height: 42px;
+}
+
 .history-layout {
   grid-template-columns: 1fr;
 }
@@ -1733,17 +1744,23 @@ input:disabled {
 
   .history-actions,
   .history-toolbar,
+  .results-actions,
   .modal-actions {
     justify-content: stretch;
   }
 
   .history-actions .button,
+  .results-actions .button,
   .modal-actions .button,
   .history-toolbar .button {
     flex: 1 1 120px;
   }
 
   .action-buttons {
+    width: 100%;
+  }
+
+  .results-actions {
     width: 100%;
   }
 
