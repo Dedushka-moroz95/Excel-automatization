@@ -9,6 +9,7 @@
       return;
     }
 
+    ensureTooltipPositioner();
     destroyChart();
 
     if (!comparison || !metric) {
@@ -109,6 +110,11 @@
       },
       options: {
         indexAxis: "y",
+        interaction: {
+          mode: "nearest",
+          axis: "xy",
+          intersect: true,
+        },
         responsive: true,
         maintainAspectRatio: false,
         layout: {
@@ -124,6 +130,7 @@
             display: false,
           },
           tooltip: {
+            position: "cursorWithinBar",
             backgroundColor: "#18212F",
             borderColor: "rgba(255, 255, 255, 0.08)",
             borderWidth: 1,
@@ -209,6 +216,56 @@
     gradient.addColorStop(0, fromColor);
     gradient.addColorStop(1, toColor);
     return gradient;
+  }
+
+  function ensureTooltipPositioner() {
+    const Tooltip = global.Chart && global.Chart.Tooltip;
+
+    if (!Tooltip || !Tooltip.positioners || Tooltip.positioners.cursorWithinBar) {
+      return;
+    }
+
+    Tooltip.positioners.cursorWithinBar = function (elements, eventPosition) {
+      if (!elements.length) {
+        return false;
+      }
+
+      const activeElement = elements[0];
+      const element = activeElement.element || activeElement;
+      const props = element.getProps ? element.getProps(["x", "y", "base", "height"], true) : element;
+      const chartArea = this.chart ? this.chart.chartArea : null;
+      const pointX = Number.isFinite(props.x) ? props.x : 0;
+      const pointY = Number.isFinite(props.y) ? props.y : 0;
+      const baseX = Number.isFinite(props.base) ? props.base : pointX;
+      const pointer = eventPosition || { x: pointX, y: pointY };
+      const rawLeft = Math.min(pointX, baseX);
+      const rawRight = Math.max(pointX, baseX);
+      const barCenter = (rawLeft + rawRight) / 2;
+      const minSpan = 18;
+      const span = Math.max(rawRight - rawLeft, minSpan);
+      const barLeft = barCenter - span / 2;
+      const barRight = barCenter + span / 2;
+      const safeLeft = chartArea ? Math.max(barLeft, chartArea.left) : barLeft;
+      const safeRight = chartArea ? Math.min(barRight, chartArea.right) : barRight;
+      const halfHeight = Math.max((props.height || 18) / 2, 9);
+
+      return {
+        x: clamp(pointer.x, safeLeft, safeRight),
+        y: clamp(pointer.y, pointY - halfHeight, pointY + halfHeight),
+      };
+    };
+  }
+
+  function clamp(value, min, max) {
+    if (!Number.isFinite(value)) {
+      return min;
+    }
+
+    if (min > max) {
+      return (min + max) / 2;
+    }
+
+    return Math.min(Math.max(value, min), max);
   }
 
   function clearCanvas(canvas) {
