@@ -1,6 +1,13 @@
 (function (global) {
   const App = (global.OperationalAnalytics = global.OperationalAnalytics || {});
   const Normalizers = App.Normalizers;
+  const SHEET_NAMES = {
+    dashboard: "Обзор",
+    summary: "Сводка",
+    comparison: "Сравнение",
+    missing: "Отсутствующие",
+    duplicates: "Дубли",
+  };
 
   function exportCsv(comparison, metrics) {
     const rows = buildFlatRows(comparison, metrics);
@@ -22,15 +29,19 @@
     const workbook = new global.ExcelJS.Workbook();
     workbook.creator = "Operational Analytics";
     workbook.created = new Date();
+    const chartMetric = exportOptions.chartMetric || metrics[0];
 
-    fillDashboardSheet(workbook, comparison, analytics, exportOptions.chartMetric || metrics[0]);
-    fillSummarySheet(workbook.addWorksheet("Summary"), analytics);
-    fillComparisonSheet(workbook.addWorksheet("Comparison"), comparison, metrics);
-    fillMissingSheet(workbook.addWorksheet("Missing"), comparison);
-    fillDuplicateSheet(workbook.addWorksheet("Duplicates"), comparison);
+    fillDashboardSheet(workbook.addWorksheet(SHEET_NAMES.dashboard), analytics, chartMetric);
+    fillSummarySheet(workbook.addWorksheet(SHEET_NAMES.summary), analytics);
+    fillComparisonSheet(workbook, workbook.addWorksheet(SHEET_NAMES.comparison), comparison, metrics, chartMetric);
+    fillMissingSheet(workbook.addWorksheet(SHEET_NAMES.missing), comparison);
+    fillDuplicateSheet(workbook.addWorksheet(SHEET_NAMES.duplicates), comparison);
 
     workbook.worksheets.forEach(function (sheet) {
-      sheet.views = [{ state: "frozen", ySplit: 1 }];
+      if (!sheet.views || !sheet.views.length) {
+        sheet.views = [{ state: "frozen", ySplit: 1 }];
+      }
+
       sheet.columns.forEach(function (column) {
         column.width = Math.min(Math.max(column.width || 14, 14), 32);
       });
@@ -40,9 +51,7 @@
     downloadBlob(buffer, "comparison-report.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   }
 
-  function fillDashboardSheet(workbook, comparison, analytics, chartMetric) {
-    const sheet = workbook.addWorksheet("Dashboard");
-    const chartDataUrl = buildDashboardChartImage(comparison, chartMetric);
+  function fillDashboardSheet(sheet, analytics, chartMetric) {
     const metricLabel = chartMetric ? chartMetric.label : "Показатель";
 
     sheet.columns = [
@@ -55,13 +64,13 @@
     ];
 
     sheet.mergeCells("A1:F1");
-    sheet.getCell("A1").value = "Dashboard";
+    sheet.getCell("A1").value = "Обзор отчета";
     sheet.getCell("A1").font = { bold: true, size: 22, color: { argb: "FF18212F" } };
     sheet.getCell("A1").alignment = { vertical: "middle" };
     sheet.getRow(1).height = 30;
 
     sheet.mergeCells("A2:F2");
-    sheet.getCell("A2").value = "График динамики: " + metricLabel;
+    sheet.getCell("A2").value = "График динамики по показателю \"" + metricLabel + "\" находится на листе \"" + SHEET_NAMES.comparison + "\".";
     sheet.getCell("A2").font = { bold: true, size: 12, color: { argb: "FF667085" } };
 
     sheet.addRow([]);
@@ -72,20 +81,6 @@
     sheet.addRow(["Проблем", analytics.missingTotal + analytics.duplicateIds + analytics.invalidValues]);
 
     styleHeaderRow(sheet, 4);
-
-    if (chartDataUrl && typeof workbook.addImage === "function") {
-      const imageId = workbook.addImage({
-        base64: chartDataUrl,
-        extension: "png",
-      });
-
-      sheet.addImage(imageId, {
-        tl: { col: 0, row: 9 },
-        ext: { width: 980, height: 500 },
-      });
-    } else {
-      sheet.getCell("A11").value = "График недоступен для экспорта";
-    }
   }
 
   function buildFlatRows(comparison, metrics) {
@@ -174,9 +169,39 @@
     styleHeaderRow(sheet);
   }
 
-  function fillComparisonSheet(sheet, comparison, metrics) {
+  function fillComparisonSheet(workbook, sheet, comparison, metrics, chartMetric) {
+    const chartDataUrl = buildDashboardChartImage(comparison, chartMetric);
+    const hasChartImage = Boolean(chartDataUrl && typeof workbook.addImage === "function");
+    const tableStartRow = hasChartImage ? 34 : 3;
+
+    if (hasChartImage) {
+      sheet.mergeCells("A1:H1");
+      sheet.getCell("A1").value = "График динамики: " + (chartMetric ? chartMetric.label : "Показатель");
+      sheet.getCell("A1").font = { bold: true, size: 18, color: { argb: "FF18212F" } };
+      sheet.getCell("A1").alignment = { vertical: "middle" };
+      sheet.getRow(1).height = 28;
+
+      const imageId = workbook.addImage({
+        base64: chartDataUrl,
+        extension: "png",
+      });
+
+      sheet.addImage(imageId, {
+        tl: { col: 0, row: 2 },
+        ext: { width: 980, height: 500 },
+      });
+    } else {
+      sheet.mergeCells("A1:H1");
+      sheet.getCell("A1").value = "График недоступен для экспорта";
+      sheet.getCell("A1").font = { bold: true, size: 14, color: { argb: "FF667085" } };
+    }
+
+    while (sheet.rowCount < tableStartRow - 1) {
+      sheet.addRow([]);
+    }
+
     sheet.addRows(buildFlatRows(comparison, metrics));
-    styleHeaderRow(sheet);
+    styleHeaderRow(sheet, tableStartRow);
   }
 
   function fillMissingSheet(sheet, comparison) {
