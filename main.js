@@ -412,8 +412,12 @@
   }
 
   function renderMetricRow(metric) {
+    const hasMismatch = Boolean(getMetricSelectionIssue(metric, 0));
+
     return (
-      '<div class="metric-row metric-row--multi" data-metric-id="' +
+      '<div class="metric-row metric-row--multi' +
+      (hasMismatch ? " metric-row--invalid" : "") +
+      '" data-metric-id="' +
       metric.id +
       '">' +
       '<div class="metric-name"><span>Показатель</span><strong>' +
@@ -567,7 +571,8 @@
           return state.periods.every(function (period) {
             return Boolean(metric.columns[period.id]);
           });
-        })
+        }) &&
+        !getMetricSelectionIssues().length
     );
   }
 
@@ -576,10 +581,13 @@
     syncMetricLabels();
 
     if (!isReadyToAnalyze()) {
-      state.messages.push({
-        type: "error",
-        message: "Для расчета нужны минимум два загруженных периода, колонки с объектами сравнения и хотя бы один показатель",
-      });
+      const metricIssues = getMetricSelectionIssues();
+      if (!metricIssues.length) {
+        state.messages.push({
+          type: "error",
+          message: "Для расчета нужны минимум два загруженных периода, колонки с объектами сравнения и хотя бы один показатель",
+        });
+      }
       renderAll();
       return;
     }
@@ -1045,12 +1053,98 @@
     });
 
     warnings.push.apply(warnings, compareHeadersWarning());
+    warnings.push.apply(warnings, getMetricSelectionWarnings());
 
     if (state.comparison) {
       appendComparisonWarnings(warnings);
     }
 
     return warnings;
+  }
+
+  function getMetricSelectionWarnings() {
+    return getMetricSelectionIssues().map(function (issue) {
+      return {
+        type: "error",
+        message: formatMetricSelectionIssue(issue),
+      };
+    });
+  }
+
+  function getMetricSelectionIssues() {
+    if (!areIdsReady() || !state.mapping.metrics.length) {
+      return [];
+    }
+
+    return state.mapping.metrics
+      .map(function (metric, index) {
+        return getMetricSelectionIssue(metric, index);
+      })
+      .filter(Boolean);
+  }
+
+  function getMetricSelectionIssue(metric, index) {
+    if (!areAllPeriodsLoaded()) {
+      return null;
+    }
+
+    const selections = state.periods.map(function (period) {
+      const columnName = getColumnName(period, metric.columns[period.id]);
+
+      return {
+        periodLabel: period.label,
+        columnName: columnName,
+        normalizedName: normalizeMetricColumnName(columnName),
+      };
+    });
+
+    if (
+      selections.some(function (item) {
+        return !item.normalizedName;
+      })
+    ) {
+      return null;
+    }
+
+    const uniqueNames = new Set(
+      selections.map(function (item) {
+        return item.normalizedName;
+      })
+    );
+
+    if (uniqueNames.size <= 1) {
+      return null;
+    }
+
+    return {
+      index: index,
+      metric: metric,
+      selections: selections,
+    };
+  }
+
+  function normalizeMetricColumnName(value) {
+    return App.Normalizers.normalizeKey(value)
+      .replace(/[%№#]/g, " ")
+      .replace(/\b(процент|проц|percent|pct)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function formatMetricSelectionIssue(issue) {
+    const details = issue.selections
+      .map(function (item) {
+        return "«" + item.periodLabel + "» — «" + item.columnName + "»";
+      })
+      .join("; ");
+
+    return (
+      "Показатель " +
+      (issue.index + 1) +
+      " выбран из разных столбцов: " +
+      details +
+      ". Выберите одинаковый показатель во всех периодах."
+    );
   }
 
   function compareHeadersWarning() {

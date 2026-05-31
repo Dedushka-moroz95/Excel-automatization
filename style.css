@@ -816,6 +816,16 @@ input:disabled {
   box-shadow: 0 14px 32px rgba(24, 33, 47, 0.05);
 }
 
+.metric-row--invalid {
+  border-color: #fecdd3;
+  background: #fff1f2;
+}
+
+.metric-row--invalid .metric-name strong {
+  border-color: #fecdd3;
+  background: #ffe4e6;
+}
+
 .metric-name {
   display: grid;
   gap: 8px;
