@@ -116,10 +116,38 @@
         </header>
 
         <main class="app-shell">
+          <section id="dashboardSection" class="workspace-section dashboard-layout" aria-labelledby="dashboardTitle">
+        <div class="section-title section-title--wide">
+          <div class="step-heading">
+            <span class="step-index">01</span>
+            <div class="title-with-help">
+              <h2 id="dashboardTitle">Dashboard</h2>
+              <button class="help-button" type="button" aria-label="Подсказка: dashboard">
+                ?
+                <span class="help-tooltip" role="tooltip">Здесь показана сводка по расчету: ключевые числа, график, лучшая и худшая динамика. График можно переключать по показателям.</span>
+              </button>
+            </div>
+          </div>
+          <label class="field field-inline">
+            <span>График</span>
+            <select id="chartMetricSelect" disabled></select>
+          </label>
+        </div>
+        <div id="summaryCards" class="summary-grid empty-state">Результаты появятся после расчета</div>
+        <div class="chart-panel">
+          <div class="chart-panel__header">
+            <span>Динамика</span>
+            <strong>По выбранному показателю</strong>
+          </div>
+          <canvas id="deltaChart" height="120"></canvas>
+        </div>
+        <div id="moversPanel" class="movers-grid"></div>
+          </section>
+
           <section id="uploadSection" class="workspace-section upload-grid" aria-labelledby="uploadTitle">
         <div class="section-title">
           <div class="step-heading">
-            <span class="step-index">01</span>
+            <span class="step-index">02</span>
             <div class="title-with-help">
               <h2 id="uploadTitle">Файлы периодов</h2>
               <button class="help-button" type="button" aria-label="Подсказка: файлы периодов">
@@ -137,7 +165,7 @@
           <section id="previewSection" class="workspace-section preview-grid" aria-labelledby="previewTitle">
         <div class="section-title section-title--wide">
           <div class="step-heading">
-            <span class="step-index">02</span>
+            <span class="step-index">03</span>
             <div class="title-with-help">
               <h2 id="previewTitle">Preview таблиц</h2>
               <button class="help-button" type="button" aria-label="Подсказка: preview таблиц">
@@ -154,7 +182,7 @@
           <section id="mapperSection" class="workspace-section mapper-grid" aria-labelledby="mapperTitle">
         <div class="section-title section-title--wide">
           <div class="step-heading">
-            <span class="step-index">03</span>
+            <span class="step-index">04</span>
             <div class="title-with-help">
               <h2 id="mapperTitle">Сопоставление колонок</h2>
               <button class="help-button" type="button" aria-label="Подсказка: сопоставление колонок">
@@ -185,7 +213,7 @@
           <section id="historySection" class="workspace-section history-layout" aria-labelledby="historyTitle">
         <div class="section-title section-title--wide">
           <div class="step-heading">
-            <span class="step-index">04</span>
+            <span class="step-index">05</span>
             <div class="title-with-help">
               <h2 id="historyTitle">История анализов</h2>
               <button class="help-button" type="button" aria-label="Подсказка: история анализов">
@@ -210,30 +238,6 @@
         <div id="historyList" class="history-list empty-state">
           Сохраненные анализы появятся здесь после расчета и сохранения результата.
         </div>
-          </section>
-
-          <section id="dashboardSection" class="workspace-section dashboard-layout" aria-labelledby="dashboardTitle">
-        <div class="section-title section-title--wide">
-          <div class="step-heading">
-            <span class="step-index">05</span>
-            <div class="title-with-help">
-              <h2 id="dashboardTitle">Dashboard</h2>
-              <button class="help-button" type="button" aria-label="Подсказка: dashboard">
-                ?
-                <span class="help-tooltip" role="tooltip">Здесь показана сводка по расчету: ключевые числа, график, лучшая и худшая динамика. График можно переключать по показателям.</span>
-              </button>
-            </div>
-          </div>
-          <label class="field field-inline">
-            <span>График</span>
-            <select id="chartMetricSelect" disabled></select>
-          </label>
-        </div>
-        <div id="summaryCards" class="summary-grid empty-state">Результаты появятся после расчета</div>
-        <div class="chart-panel">
-          <canvas id="deltaChart" height="120"></canvas>
-        </div>
-        <div id="moversPanel" class="movers-grid"></div>
           </section>
 
           <section id="resultsSection" class="workspace-section" aria-labelledby="resultsTitle">
