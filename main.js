@@ -32,6 +32,13 @@
     dom.exportExcelButton = document.getElementById("exportExcelButton");
     dom.saveAnalysisButton = document.getElementById("saveAnalysisButton");
     dom.warningsPanel = document.getElementById("warningsPanel");
+    dom.globalImpactFilter = document.getElementById("globalImpactFilter");
+    dom.globalDeltaMinFilter = document.getElementById("globalDeltaMinFilter");
+    dom.globalDeltaMaxFilter = document.getElementById("globalDeltaMaxFilter");
+    dom.globalObjectSearch = document.getElementById("globalObjectSearch");
+    dom.globalDepartmentSearch = document.getElementById("globalDepartmentSearch");
+    dom.globalFilterStatus = document.getElementById("globalFilterStatus");
+    dom.resetGlobalFiltersButton = document.getElementById("resetGlobalFiltersButton");
     dom.clearHistoryButton = document.getElementById("clearHistoryButton");
     dom.historyList = document.getElementById("historyList");
     dom.historyTitle = document.getElementById("historyTitle");
@@ -94,6 +101,12 @@
     dom.exportCsvButton.addEventListener("click", exportCsv);
     dom.exportExcelButton.addEventListener("click", exportExcel);
     dom.saveAnalysisButton.addEventListener("click", openSaveAnalysisModal);
+    dom.globalImpactFilter.addEventListener("change", handleGlobalFilterChange);
+    dom.globalDeltaMinFilter.addEventListener("input", handleGlobalFilterChange);
+    dom.globalDeltaMaxFilter.addEventListener("input", handleGlobalFilterChange);
+    dom.globalObjectSearch.addEventListener("input", handleGlobalFilterChange);
+    dom.globalDepartmentSearch.addEventListener("input", handleGlobalFilterChange);
+    dom.resetGlobalFiltersButton.addEventListener("click", resetGlobalFilters);
     dom.clearHistoryButton.addEventListener("click", clearHistory);
     dom.historyList.addEventListener("click", handleHistoryClick);
     dom.historySearchInput.addEventListener("input", function () {
@@ -118,7 +131,7 @@
 
     dom.chartMetricSelect.addEventListener("change", function () {
       state.selectedChartMetricId = dom.chartMetricSelect.value;
-      renderChart();
+      renderAnalysis();
     });
   }
 
@@ -251,6 +264,7 @@
     state.comparison = null;
     state.analytics = null;
     state.selectedChartMetricId = "";
+    resetGlobalFiltersState();
     state.restoredHistoryMeta = null;
     state.restoredHistorySettings = null;
     hasUnsavedAnalysis = false;
@@ -611,12 +625,15 @@
   }
 
   function renderAnalysis() {
-    App.UI.renderSummary(dom.summaryCards, state.analytics);
+    const view = buildFilteredAnalysisView();
+
+    renderGlobalFilters(view);
+    App.UI.renderSummary(dom.summaryCards, view.analytics);
     App.UI.renderChartMetricSelect(dom.chartMetricSelect, state.mapping.metrics, state.selectedChartMetricId);
     dom.chartMetricSelect.disabled = !state.comparison || !state.mapping.metrics.length;
-    App.UI.renderMovers(dom.moversPanel, state.analytics);
-    App.UI.renderResultsTable(dom.resultsTable, state.comparison, state.mapping.metrics);
-    renderChart();
+    App.UI.renderMovers(dom.moversPanel, view.analytics);
+    App.UI.renderResultsTable(dom.resultsTable, view.comparison, state.mapping.metrics);
+    renderChart(view.comparison);
 
     const hasComparison = Boolean(state.comparison);
     dom.exportCsvButton.disabled = !hasComparison;
@@ -866,6 +883,7 @@
     state.selectedChartMetricId =
       record.settings.selectedChartMetricId ||
       (state.mapping.metrics[0] ? state.mapping.metrics[0].id : "");
+    resetGlobalFiltersState();
     state.periods = restorePeriods(record);
     state.restoredHistoryMeta = cloneJson(record.meta || {});
     state.restoredHistorySettings = cloneJson(record.settings || {});
@@ -1013,9 +1031,243 @@
     });
   }
 
-  function renderChart() {
+  function handleGlobalFilterChange() {
+    ensureGlobalFilters();
+    state.globalFilters.impact = dom.globalImpactFilter.value;
+    state.globalFilters.deltaMin = dom.globalDeltaMinFilter.value;
+    state.globalFilters.deltaMax = dom.globalDeltaMaxFilter.value;
+    state.globalFilters.objectQuery = dom.globalObjectSearch.value;
+    state.globalFilters.departmentQuery = dom.globalDepartmentSearch.value;
+    renderAnalysis();
+  }
+
+  function resetGlobalFilters() {
+    resetGlobalFiltersState();
+    renderAnalysis();
+  }
+
+  function resetGlobalFiltersState() {
+    state.globalFilters = App.createGlobalFilters ? App.createGlobalFilters() : {
+      impact: "all",
+      deltaMin: "",
+      deltaMax: "",
+      objectQuery: "",
+      departmentQuery: "",
+    };
+  }
+
+  function ensureGlobalFilters() {
+    if (!state.globalFilters) {
+      resetGlobalFiltersState();
+    }
+  }
+
+  function buildFilteredAnalysisView() {
+    ensureGlobalFilters();
+
+    if (!state.comparison) {
+      return {
+        comparison: null,
+        analytics: null,
+        totalRows: 0,
+        visibleRows: 0,
+      };
+    }
+
+    const filteredComparison = buildFilteredComparison(state.comparison);
+    const analytics = App.Analytics.buildAnalytics(filteredComparison, state.mapping.metrics);
+
+    return {
+      comparison: filteredComparison,
+      analytics: analytics,
+      totalRows: state.comparison.rows.length,
+      visibleRows: filteredComparison.rows.length,
+    };
+  }
+
+  function buildFilteredComparison(comparison) {
+    if (!hasActiveGlobalFilters()) {
+      return comparison;
+    }
+
+    return Object.assign({}, comparison, {
+      rows: comparison.rows.filter(rowMatchesGlobalFilters),
+    });
+  }
+
+  function rowMatchesGlobalFilters(row) {
+    const filters = state.globalFilters;
+    const objectQuery = normalizeSearch(filters.objectQuery);
+    const departmentQuery = normalizeSearch(filters.departmentQuery);
+
+    if (objectQuery && !matchesText([row.label, row.key], objectQuery)) {
+      return false;
+    }
+
+    if (departmentQuery && !matchesText(getRowSearchValues(row), departmentQuery)) {
+      return false;
+    }
+
+    if (!hasMetricGlobalFilters()) {
+      return true;
+    }
+
+    const comparisons = getRowFilterComparisons(row);
+
+    if (!comparisons.length) {
+      return false;
+    }
+
+    return comparisons.some(matchGlobalMetricFilters);
+  }
+
+  function matchGlobalMetricFilters(item) {
+    const filters = state.globalFilters;
+    const min = parseFilterNumber(filters.deltaMin);
+    const max = parseFilterNumber(filters.deltaMax);
+
+    if (filters.impact === "good" && item.impact !== "good") {
+      return false;
+    }
+
+    if (filters.impact === "bad" && item.impact !== "bad") {
+      return false;
+    }
+
+    if (Number.isFinite(min) && item.delta < min) {
+      return false;
+    }
+
+    if (Number.isFinite(max) && item.delta > max) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function getRowFilterComparisons(row) {
     const metric = findMetric(state.selectedChartMetricId) || state.mapping.metrics[0];
-    App.Charts.renderDeltaChart(dom.deltaChart, state.comparison, metric);
+    const metricResults = metric
+      ? row.metrics.filter(function (item) {
+          return item.metricId === metric.id;
+        })
+      : row.metrics;
+
+    return metricResults
+      .flatMap(function (result) {
+        return result && Array.isArray(result.comparisons) ? result.comparisons : [];
+      })
+      .filter(function (item) {
+        return Number.isFinite(item.delta);
+      });
+  }
+
+  function hasMetricGlobalFilters() {
+    const filters = state.globalFilters;
+
+    return (
+      filters.impact !== "all" ||
+      Number.isFinite(parseFilterNumber(filters.deltaMin)) ||
+      Number.isFinite(parseFilterNumber(filters.deltaMax))
+    );
+  }
+
+  function hasActiveGlobalFilters() {
+    const filters = state.globalFilters;
+
+    return Boolean(
+      filters &&
+        (filters.impact !== "all" ||
+          String(filters.deltaMin || "").trim() ||
+          String(filters.deltaMax || "").trim() ||
+          String(filters.objectQuery || "").trim() ||
+          String(filters.departmentQuery || "").trim())
+    );
+  }
+
+  function renderGlobalFilters(view) {
+    ensureGlobalFilters();
+
+    const hasComparison = Boolean(state.comparison);
+    const hasActiveFilters = hasActiveGlobalFilters();
+    const controls = [
+      dom.globalImpactFilter,
+      dom.globalDeltaMinFilter,
+      dom.globalDeltaMaxFilter,
+      dom.globalObjectSearch,
+      dom.globalDepartmentSearch,
+    ];
+
+    dom.globalImpactFilter.value = state.globalFilters.impact;
+    dom.globalDeltaMinFilter.value = state.globalFilters.deltaMin;
+    dom.globalDeltaMaxFilter.value = state.globalFilters.deltaMax;
+    dom.globalObjectSearch.value = state.globalFilters.objectQuery;
+    dom.globalDepartmentSearch.value = state.globalFilters.departmentQuery;
+
+    controls.forEach(function (control) {
+      control.disabled = !hasComparison;
+    });
+
+    dom.resetGlobalFiltersButton.disabled = !hasComparison || !hasActiveFilters;
+
+    if (!hasComparison) {
+      dom.globalFilterStatus.textContent = "Фильтры появятся после расчета";
+      return;
+    }
+
+    if (!hasActiveFilters) {
+      dom.globalFilterStatus.textContent = "Показаны все строки: " + view.totalRows;
+      return;
+    }
+
+    dom.globalFilterStatus.textContent = view.visibleRows
+      ? "Показано " + view.visibleRows + " из " + view.totalRows
+      : "Ничего не найдено";
+  }
+
+  function getRowSearchValues(row) {
+    const values = [row.label, row.key];
+
+    if (!Array.isArray(row.records)) {
+      return values;
+    }
+
+    row.records.forEach(function (record) {
+      if (!record || !record.row || !record.row.values) {
+        return;
+      }
+
+      Object.keys(record.row.values).forEach(function (key) {
+        values.push(record.row.values[key]);
+      });
+    });
+
+    return values;
+  }
+
+  function normalizeSearch(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function matchesText(values, query) {
+    return values.some(function (value) {
+      return String(value || "").toLowerCase().includes(query);
+    });
+  }
+
+  function parseFilterNumber(value) {
+    const text = String(value || "").replace(",", ".").trim();
+
+    if (!text) {
+      return NaN;
+    }
+
+    return Number(text);
+  }
+
+  function renderChart(comparison) {
+    const metric = findMetric(state.selectedChartMetricId) || state.mapping.metrics[0];
+    App.Charts.renderDeltaChart(dom.deltaChart, comparison || state.comparison, metric);
   }
 
   function syncMetricLabels() {

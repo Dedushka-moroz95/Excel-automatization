@@ -82,6 +82,40 @@
             </div>
           </section>
 
+          <section class="sidebar-control-card sidebar-filter-card" aria-label="Глобальные фильтры">
+            <span class="sidebar-panel__label">Фильтры</span>
+            <label class="field sidebar-field">
+              <span>Динамика графика</span>
+              <select id="globalImpactFilter" disabled>
+                <option value="all">Все изменения</option>
+                <option value="good">Только улучшения</option>
+                <option value="bad">Только ухудшения</option>
+              </select>
+            </label>
+            <div class="filter-range">
+              <label class="field sidebar-field">
+                <span>От</span>
+                <input id="globalDeltaMinFilter" type="text" inputmode="decimal" placeholder="-10" disabled />
+              </label>
+              <label class="field sidebar-field">
+                <span>До</span>
+                <input id="globalDeltaMaxFilter" type="text" inputmode="decimal" placeholder="10" disabled />
+              </label>
+            </div>
+            <label class="field sidebar-field">
+              <span>Сотрудник / объект</span>
+              <input id="globalObjectSearch" type="text" placeholder="Имя, логин, команда" autocomplete="off" disabled />
+            </label>
+            <label class="field sidebar-field">
+              <span>Подразделение</span>
+              <input id="globalDepartmentSearch" type="text" placeholder="Любое поле строки" autocomplete="off" disabled />
+            </label>
+            <div id="globalFilterStatus" class="filter-status">Фильтры появятся после расчета</div>
+            <button id="resetGlobalFiltersButton" class="button button-secondary" type="button" disabled>
+              Сбросить фильтры
+            </button>
+          </section>
+
           <section class="sidebar-control-card" aria-label="Действия с отчетом">
             <span class="sidebar-panel__label">Отчет</span>
             <div class="results-actions sidebar-actions">

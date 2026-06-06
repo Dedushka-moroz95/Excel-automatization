@@ -11,7 +11,18 @@
       comparison: null,
       analytics: null,
       selectedChartMetricId: "",
+      globalFilters: createGlobalFilters(),
       messages: [],
+    };
+  }
+
+  function createGlobalFilters() {
+    return {
+      impact: "all",
+      deltaMin: "",
+      deltaMax: "",
+      objectQuery: "",
+      departmentQuery: "",
     };
   }
 
@@ -37,6 +48,7 @@
 
   App.state = createInitialState();
   App.createInitialState = createInitialState;
+  App.createGlobalFilters = createGlobalFilters;
   App.createPeriod = createPeriod;
   App.createMetric = createMetric;
 })(window);
