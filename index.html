@@ -59,6 +59,45 @@
           </a>
         </nav>
 
+        <div class="sidebar-control-stack" aria-label="Управление анализом">
+          <section class="sidebar-control-card" aria-label="Настройки сравнения">
+            <span class="sidebar-panel__label">Сравнение</span>
+            <label class="field sidebar-field">
+              <span>Формат</span>
+              <select id="comparisonModeSelect">
+                <option value="endpoint">Итоговый: последний минус первый</option>
+                <option value="sequential">Последовательный: каждый к предыдущему</option>
+              </select>
+            </label>
+            <button id="addPeriodButton" class="button button-secondary" type="button">+ Период</button>
+          </section>
+
+          <section class="sidebar-control-card" aria-label="Расчет и проверки">
+            <span class="sidebar-panel__label">Расчет</span>
+            <button id="analyzeButton" class="button button-primary" type="button" disabled>
+              Сравнить
+            </button>
+            <div id="warningsPanel" class="data-quality-inline" data-variant="inline-quality">
+              Проверок пока нет
+            </div>
+          </section>
+
+          <section class="sidebar-control-card" aria-label="Действия с отчетом">
+            <span class="sidebar-panel__label">Отчет</span>
+            <div class="results-actions sidebar-actions">
+              <button id="exportCsvButton" class="button button-secondary" type="button" disabled>
+                CSV
+              </button>
+              <button id="exportExcelButton" class="button button-secondary" type="button" disabled>
+                Excel
+              </button>
+              <button id="saveAnalysisButton" class="button button-secondary" type="button" disabled>
+                Сохранить анализ
+              </button>
+            </div>
+          </section>
+        </div>
+
         <div class="sidebar-panel">
           <span class="sidebar-panel__label">Статус</span>
           <div class="header-status" id="dependencyStatus">Проверка библиотек</div>
@@ -90,17 +129,6 @@
             </div>
           </div>
           <span class="section-subtitle">Выберите общий срез или последовательную динамику</span>
-        </div>
-
-        <div class="period-toolbar">
-          <label class="field comparison-mode-field">
-            <span>Формат сравнения</span>
-            <select id="comparisonModeSelect">
-              <option value="endpoint">Итоговый: последний минус первый</option>
-              <option value="sequential">Последовательный: каждый к предыдущему</option>
-            </select>
-          </label>
-          <button id="addPeriodButton" class="button button-secondary" type="button">+ Период</button>
         </div>
 
         <div id="periodList" class="period-list"></div>
@@ -152,16 +180,6 @@
           Выберите колонки с объектами сравнения, чтобы добавить показатели
         </div>
 
-        <div class="action-row">
-          <div class="action-buttons">
-            <button id="analyzeButton" class="button button-primary" type="button" disabled>
-              Сравнить
-            </button>
-          </div>
-          <div id="warningsPanel" class="data-quality-inline" data-variant="inline-quality">
-            Проверок пока нет
-          </div>
-        </div>
           </section>
 
           <section id="historySection" class="workspace-section history-layout" aria-labelledby="historyTitle">
@@ -230,18 +248,8 @@
               </button>
             </div>
           </div>
-          <div id="exportSection" class="results-actions">
-            <button id="exportCsvButton" class="button button-secondary" type="button" disabled>
-              CSV
-            </button>
-            <button id="exportExcelButton" class="button button-secondary" type="button" disabled>
-              Excel
-            </button>
-            <button id="saveAnalysisButton" class="button button-secondary" type="button" disabled>
-              Сохранить анализ
-            </button>
-          </div>
         </div>
+        <span id="exportSection" class="section-anchor" aria-hidden="true"></span>
         <div id="resultsTable" class="results-panel empty-state">Нет рассчитанных данных</div>
           </section>
         </main>
