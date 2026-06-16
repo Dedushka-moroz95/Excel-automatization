@@ -2,11 +2,14 @@
   const App = (global.OperationalAnalytics = global.OperationalAnalytics || {});
   const LINK_SELECTOR = ".sidebar-link[href^='#']";
   const ACTIVE_CLASS = "is-active";
+  const ACTIVE_LOCK_TIMEOUT_MS = 1400;
   const visibleSections = new Map();
   let links = [];
   let sections = [];
   let observer = null;
   let scrollTicking = false;
+  let lockedSectionId = "";
+  let activeLockTimer = 0;
 
   document.addEventListener("DOMContentLoaded", init);
 
@@ -23,6 +26,7 @@
         const section = getSectionFromLink(link);
 
         if (section) {
+          lockActiveSection(section.id);
           setActiveSection(section.id);
         }
       });
@@ -41,6 +45,10 @@
     } else {
       global.addEventListener("scroll", scheduleFallbackUpdate, { passive: true });
     }
+
+    global.addEventListener("wheel", clearActiveLock, { passive: true });
+    global.addEventListener("touchstart", clearActiveLock, { passive: true });
+    global.addEventListener("keydown", handleNavigationKeydown);
 
     setActiveSection(getInitialSectionId());
     scheduleFallbackUpdate();
@@ -84,7 +92,7 @@
     const activeSection = getBestVisibleSection() || getNearestSection();
 
     if (activeSection) {
-      setActiveSection(activeSection.id);
+      applyActiveSection(activeSection.id);
     }
   }
 
@@ -143,6 +151,57 @@
     });
   }
 
+  function applyActiveSection(sectionId) {
+    if (!lockedSectionId) {
+      setActiveSection(sectionId);
+      return;
+    }
+
+    const lockedSection = document.getElementById(lockedSectionId);
+
+    if (!lockedSection) {
+      clearActiveLock();
+      setActiveSection(sectionId);
+      return;
+    }
+
+    setActiveSection(lockedSectionId);
+
+    if (isSectionNearNavigationOffset(lockedSection)) {
+      clearActiveLock();
+    }
+  }
+
+  function lockActiveSection(sectionId) {
+    lockedSectionId = sectionId;
+    clearTimeout(activeLockTimer);
+
+    activeLockTimer = global.setTimeout(function () {
+      clearActiveLock();
+    }, ACTIVE_LOCK_TIMEOUT_MS);
+  }
+
+  function clearActiveLock() {
+    lockedSectionId = "";
+    clearTimeout(activeLockTimer);
+    activeLockTimer = 0;
+  }
+
+  function handleNavigationKeydown(event) {
+    const navigationKeys = ["ArrowDown", "ArrowUp", "PageDown", "PageUp", "Home", "End", " "];
+
+    if (navigationKeys.includes(event.key)) {
+      clearActiveLock();
+    }
+  }
+
+  function isSectionNearNavigationOffset(section) {
+    const offset = getNavigationOffset();
+    const distance = Math.abs(section.getBoundingClientRect().top - offset);
+
+    return distance <= 64;
+  }
+
   function keepActiveLinkVisible(link) {
     const nav = link.closest(".sidebar-nav");
 
@@ -179,7 +238,7 @@
       const activeSection = getNearestSection();
 
       if (activeSection) {
-        setActiveSection(activeSection.id);
+        applyActiveSection(activeSection.id);
       }
     });
   }
