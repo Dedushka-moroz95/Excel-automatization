@@ -139,6 +139,7 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
 }
 
 .sidebar-brand {
+  position: relative;
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr);
   gap: 12px;
@@ -182,7 +183,6 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
 }
 
 .sidebar-brand__meta {
-  position: relative;
   display: inline-flex !important;
   align-items: center;
   gap: 6px;
@@ -216,20 +216,21 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
 
 .sidebar-info-button:hover,
 .sidebar-info-button:focus-visible {
-  transform: translateY(-1px);
   border-color: rgba(15, 118, 110, 0.34);
   background: var(--primary-soft);
+  box-shadow: 0 0 0 4px rgba(15, 118, 110, 0.08);
   outline: none;
 }
 
 .sidebar-info-tooltip {
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 9px);
   left: 0;
+  right: 0;
   z-index: 45;
   display: block;
-  width: min(270px, max(190px, calc(var(--sidebar-width) - 72px)));
-  max-width: calc(100vw - 48px);
+  width: 100%;
+  max-width: 100%;
   margin-top: 0 !important;
   padding: 10px 12px;
   border: 1px solid rgba(226, 232, 240, 0.95);
