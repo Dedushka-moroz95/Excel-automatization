@@ -181,6 +181,84 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
   font-weight: 750;
 }
 
+.sidebar-brand__meta {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  margin-top: 3px;
+  overflow: visible !important;
+  white-space: nowrap;
+}
+
+.sidebar-brand__meta > span {
+  min-width: 0;
+  margin-top: 0;
+}
+
+.sidebar-info-button {
+  position: relative;
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  border-radius: 50%;
+  background: rgba(204, 251, 241, 0.68);
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+  cursor: help;
+}
+
+.sidebar-info-button:hover,
+.sidebar-info-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(15, 118, 110, 0.34);
+  background: var(--primary-soft);
+  outline: none;
+}
+
+.sidebar-info-tooltip {
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 0;
+  z-index: 45;
+  display: block;
+  width: min(260px, calc(var(--sidebar-width) - 36px));
+  max-width: calc(100vw - 40px);
+  margin-top: 0 !important;
+  padding: 10px 12px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 16px 34px rgba(24, 33, 47, 0.12);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.4;
+  opacity: 0;
+  overflow: visible !important;
+  pointer-events: none;
+  text-align: left;
+  text-overflow: clip !important;
+  transform: translateY(-4px);
+  white-space: normal !important;
+  transition:
+    opacity 180ms var(--ease-premium),
+    transform 180ms var(--ease-premium);
+}
+
+.sidebar-info-button:hover .sidebar-info-tooltip,
+.sidebar-info-button:focus .sidebar-info-tooltip,
+.sidebar-info-button:focus-visible .sidebar-info-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .sidebar-nav {
   display: grid;
   align-content: start;
@@ -705,7 +783,7 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
   display: grid;
   gap: 18px;
   width: min(var(--container), calc(100% - 48px));
-  margin: 0 auto 42px;
+  margin: 24px auto 42px;
 }
 
 .workspace-section {
