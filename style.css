@@ -260,6 +260,104 @@ input[type="file"],
   font-weight: 850;
 }
 
+.sidebar-upload-card {
+  gap: 10px;
+}
+
+.sidebar-period-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.sidebar-upload-card .period-card {
+  gap: 8px;
+  padding: 9px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.sidebar-upload-card .period-card__top {
+  align-items: center;
+  gap: 8px;
+}
+
+.sidebar-upload-card .period-badge,
+.sidebar-upload-card .period-remove {
+  width: 24px;
+  height: 24px;
+  border-radius: 9px;
+  font-size: 10px;
+}
+
+.sidebar-upload-card .period-name-field {
+  gap: 4px;
+}
+
+.sidebar-upload-card .period-name-field span {
+  display: none;
+  font-size: 11px;
+}
+
+.sidebar-upload-card .period-name-field input {
+  min-height: 32px;
+  padding: 6px 9px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sidebar-upload-card .file-drop {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 8px;
+  min-height: 0;
+  padding: 9px;
+  border-radius: 12px;
+  background:
+    linear-gradient(rgba(248, 250, 252, 0.92), rgba(248, 250, 252, 0.92)) padding-box,
+    linear-gradient(135deg, rgba(15, 118, 110, 0.34), rgba(226, 232, 240, 0.84)) border-box;
+}
+
+.sidebar-upload-card .file-drop--compact .file-drop__label {
+  display: none;
+}
+
+.sidebar-upload-card .file-drop__hint {
+  display: none;
+}
+
+.sidebar-upload-card .file-drop strong {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.sidebar-upload-card .file-drop__button {
+  grid-column: 2;
+  grid-row: 1;
+  min-height: 28px;
+  padding: 6px 9px;
+  border-radius: 10px;
+  font-size: 11px;
+  box-shadow: none;
+}
+
+.sidebar-upload-card .period-file-actions {
+  justify-content: flex-end;
+}
+
+.sidebar-upload-card .file-clear-button {
+  width: auto;
+  min-height: 28px;
+  padding: 5px 8px;
+  border-radius: 10px;
+  background: transparent;
+  font-size: 11px;
+}
+
 .sidebar-panel {
   display: grid;
   gap: 10px;
@@ -2184,7 +2282,7 @@ input:disabled {
 
   .sidebar-control-stack {
     grid-column: 1 / -1;
-    grid-template-columns: repeat(4, minmax(220px, 1fr));
+    grid-template-columns: repeat(5, minmax(220px, 1fr));
     overflow-x: auto;
     padding-bottom: 2px;
     scrollbar-width: thin;
@@ -2273,7 +2371,7 @@ input:disabled {
   }
 
   .sidebar-control-stack {
-    grid-template-columns: repeat(4, minmax(220px, 78vw));
+    grid-template-columns: repeat(5, minmax(220px, 78vw));
     gap: 8px;
     overflow-x: auto;
     padding-bottom: 4px;

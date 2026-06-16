@@ -37,9 +37,9 @@
             <span class="sidebar-link__icon">D</span>
             Dashboard
           </a>
-          <a href="#uploadSection" class="sidebar-link">
-            <span class="sidebar-link__icon">F</span>
-            Файлы периодов
+          <a href="#previewSection" class="sidebar-link">
+            <span class="sidebar-link__icon">P</span>
+            Preview
           </a>
           <a href="#mapperSection" class="sidebar-link">
             <span class="sidebar-link__icon">M</span>
@@ -60,6 +60,11 @@
         </nav>
 
         <div class="sidebar-control-stack" aria-label="Управление анализом">
+          <section class="sidebar-control-card sidebar-upload-card" aria-label="Файлы периодов">
+            <span class="sidebar-panel__label">Файлы периодов</span>
+            <div id="periodList" class="period-list sidebar-period-list"></div>
+          </section>
+
           <section class="sidebar-control-card" aria-label="Настройки сравнения">
             <span class="sidebar-panel__label">Сравнение</span>
             <label class="field sidebar-field">
@@ -178,28 +183,10 @@
         <div id="moversPanel" class="movers-grid"></div>
           </section>
 
-          <section id="uploadSection" class="workspace-section upload-grid" aria-labelledby="uploadTitle">
-        <div class="section-title">
-          <div class="step-heading">
-            <span class="step-index">02</span>
-            <div class="title-with-help">
-              <h2 id="uploadTitle">Файлы периодов</h2>
-              <button class="help-button" type="button" aria-label="Подсказка: файлы периодов">
-                ?
-                <span class="help-tooltip" role="tooltip">Загрузите Excel-файлы за периоды, которые хотите сравнить. Если периодов больше двух, выберите итоговое или последовательное сравнение.</span>
-              </button>
-            </div>
-          </div>
-          <span class="section-subtitle">Выберите общий срез или последовательную динамику</span>
-        </div>
-
-        <div id="periodList" class="period-list"></div>
-          </section>
-
           <section id="previewSection" class="workspace-section preview-grid" aria-labelledby="previewTitle">
         <div class="section-title section-title--wide">
           <div class="step-heading">
-            <span class="step-index">03</span>
+            <span class="step-index">02</span>
             <div class="title-with-help">
               <h2 id="previewTitle">Preview таблиц</h2>
               <button class="help-button" type="button" aria-label="Подсказка: preview таблиц">
@@ -216,7 +203,7 @@
           <section id="mapperSection" class="workspace-section mapper-grid" aria-labelledby="mapperTitle">
         <div class="section-title section-title--wide">
           <div class="step-heading">
-            <span class="step-index">04</span>
+            <span class="step-index">03</span>
             <div class="title-with-help">
               <h2 id="mapperTitle">Сопоставление колонок</h2>
               <button class="help-button" type="button" aria-label="Подсказка: сопоставление колонок">
@@ -247,7 +234,7 @@
           <section id="historySection" class="workspace-section history-layout" aria-labelledby="historyTitle">
         <div class="section-title section-title--wide">
           <div class="step-heading">
-            <span class="step-index">05</span>
+            <span class="step-index">04</span>
             <div class="title-with-help">
               <h2 id="historyTitle">История анализов</h2>
               <button class="help-button" type="button" aria-label="Подсказка: история анализов">
@@ -277,7 +264,7 @@
           <section id="resultsSection" class="workspace-section" aria-labelledby="resultsTitle">
         <div class="section-title">
           <div class="step-heading">
-            <span class="step-index">06</span>
+            <span class="step-index">05</span>
             <div class="title-with-help">
               <h2 id="resultsTitle">Таблица результатов</h2>
               <button class="help-button" type="button" aria-label="Подсказка: таблица результатов">
