@@ -70,8 +70,9 @@ input[type="file"],
   min-height: 100vh;
 }
 
-body.is-sidebar-resizing {
-  cursor: ew-resize;
+body.is-sidebar-resizing,
+body.is-sidebar-resizing * {
+  cursor: ew-resize !important;
   user-select: none;
 }
 
@@ -99,31 +100,36 @@ body.is-sidebar-resizing {
 .sidebar-resize-handle {
   position: fixed;
   top: 0;
-  left: calc(var(--sidebar-width) - 6px);
-  z-index: 35;
-  width: 12px;
+  left: calc(var(--sidebar-width) - 10px);
+  z-index: 39;
+  width: 20px;
   height: 100vh;
   padding: 0;
   border: 0;
   background: transparent;
   cursor: ew-resize;
+  touch-action: none;
 }
 
 .sidebar-resize-handle::before {
   content: "";
   position: absolute;
-  inset: 0 auto 0 5px;
-  width: 1px;
+  inset: 0 auto 0 9px;
+  width: 2px;
   height: 100%;
+  border-radius: 999px;
   background: rgba(148, 163, 184, 0.42);
   transition:
     background-color 180ms ease,
+    opacity 180ms ease,
     width 180ms ease;
 }
 
 .sidebar-resize-handle:hover::before,
-.sidebar-resize-handle:focus-visible::before {
+.sidebar-resize-handle:focus-visible::before,
+body.is-sidebar-resizing .sidebar-resize-handle::before {
   width: 3px;
+  opacity: 1;
   background: rgba(15, 118, 110, 0.72);
 }
 
@@ -412,6 +418,7 @@ body.is-sidebar-resizing {
 }
 
 .sidebar-upload-card .file-clear-button {
+  position: relative;
   display: inline-grid;
   place-items: center;
   width: 24px;
@@ -423,8 +430,29 @@ body.is-sidebar-resizing {
   border-radius: 9px;
   background: #fff1f2;
   color: var(--danger);
-  font-size: 16px;
-  line-height: 1;
+  font-size: 0;
+  line-height: 0;
+  overflow: hidden;
+}
+
+.sidebar-upload-card .file-clear-button::before,
+.sidebar-upload-card .file-clear-button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 10px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.sidebar-upload-card .file-clear-button::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+.sidebar-upload-card .file-clear-button::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 .sidebar-upload-card .file-clear-button:disabled {

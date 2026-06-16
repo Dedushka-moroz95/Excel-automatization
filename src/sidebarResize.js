@@ -16,32 +16,93 @@
 
     applyStoredWidth();
 
-    handle.addEventListener("pointerdown", function (event) {
-      if (!isDesktop()) {
-        return;
-      }
+    if (global.PointerEvent) {
+      handle.addEventListener("pointerdown", function (event) {
+        if (!canStartResize(event)) {
+          return;
+        }
 
-      event.preventDefault();
-      handle.setPointerCapture(event.pointerId);
-      document.body.classList.add("is-sidebar-resizing");
+        event.preventDefault();
+        document.body.classList.add("is-sidebar-resizing");
+        let lastClientX = event.clientX;
 
-      function handleMove(moveEvent) {
-        setSidebarWidth(moveEvent.clientX, false);
-      }
+        try {
+          handle.setPointerCapture(event.pointerId);
+        } catch (_error) {
+          // Drag still works through document-level listeners.
+        }
 
-      function handleUp(upEvent) {
-        handle.releasePointerCapture(upEvent.pointerId);
-        document.body.classList.remove("is-sidebar-resizing");
-        setSidebarWidth(upEvent.clientX, true);
-        global.removeEventListener("pointermove", handleMove);
-        global.removeEventListener("pointerup", handleUp);
-      }
+        function handleMove(moveEvent) {
+          if (moveEvent.pointerId !== event.pointerId) {
+            return;
+          }
 
-      global.addEventListener("pointermove", handleMove);
-      global.addEventListener("pointerup", handleUp);
-    });
+          moveEvent.preventDefault();
+          lastClientX = moveEvent.clientX;
+          setSidebarWidth(moveEvent.clientX, false);
+        }
+
+        function handleUp(upEvent) {
+          if (upEvent.pointerId !== event.pointerId) {
+            return;
+          }
+
+          try {
+            handle.releasePointerCapture(upEvent.pointerId);
+          } catch (_error) {
+            // Pointer capture may already be released by the browser.
+          }
+
+          stopResize();
+          const shouldUseLastClientX = upEvent.type === "pointercancel" || !Number.isFinite(upEvent.clientX);
+          const finalClientX = shouldUseLastClientX ? lastClientX : upEvent.clientX;
+          setSidebarWidth(finalClientX, true);
+          document.removeEventListener("pointermove", handleMove);
+          document.removeEventListener("pointerup", handleUp);
+          document.removeEventListener("pointercancel", handleUp);
+        }
+
+        document.addEventListener("pointermove", handleMove, { passive: false });
+        document.addEventListener("pointerup", handleUp);
+        document.addEventListener("pointercancel", handleUp);
+      });
+    } else {
+      handle.addEventListener("mousedown", function (event) {
+        if (!canStartResize(event)) {
+          return;
+        }
+
+        event.preventDefault();
+        document.body.classList.add("is-sidebar-resizing");
+        let lastClientX = event.clientX;
+
+        function handleMove(moveEvent) {
+          moveEvent.preventDefault();
+          lastClientX = moveEvent.clientX;
+          setSidebarWidth(moveEvent.clientX, false);
+        }
+
+        function handleUp(upEvent) {
+          stopResize();
+          setSidebarWidth(Number.isFinite(upEvent.clientX) ? upEvent.clientX : lastClientX, true);
+          document.removeEventListener("mousemove", handleMove);
+          document.removeEventListener("mouseup", handleUp);
+        }
+
+        document.addEventListener("mousemove", handleMove);
+        document.addEventListener("mouseup", handleUp);
+      });
+    }
 
     global.addEventListener("resize", applyStoredWidth);
+  }
+
+  function canStartResize(event) {
+    return isDesktop() && (event.button === undefined || event.button === 0);
+  }
+
+  function stopResize() {
+    document.body.classList.remove("is-sidebar-resizing");
   }
 
   function applyStoredWidth() {
@@ -57,7 +118,13 @@
   }
 
   function setSidebarWidth(width, shouldPersist) {
-    const nextWidth = clampWidth(Number(width));
+    const numericWidth = Number(width);
+
+    if (!Number.isFinite(numericWidth)) {
+      return;
+    }
+
+    const nextWidth = clampWidth(numericWidth);
 
     document.documentElement.style.setProperty("--sidebar-width", nextWidth + "px");
 
