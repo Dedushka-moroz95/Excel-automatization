@@ -71,7 +71,7 @@ input[type="file"],
 }
 
 body.is-sidebar-resizing {
-  cursor: col-resize;
+  cursor: ew-resize;
   user-select: none;
 }
 
@@ -91,6 +91,7 @@ body.is-sidebar-resizing {
   background: rgba(255, 255, 255, 0.86);
   box-shadow: 12px 0 36px rgba(24, 33, 47, 0.04);
   backdrop-filter: blur(18px);
+  overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: thin;
 }
@@ -98,34 +99,31 @@ body.is-sidebar-resizing {
 .sidebar-resize-handle {
   position: fixed;
   top: 0;
-  left: calc(var(--sidebar-width) - 5px);
+  left: calc(var(--sidebar-width) - 6px);
   z-index: 35;
-  width: 10px;
+  width: 12px;
   height: 100vh;
   padding: 0;
   border: 0;
   background: transparent;
-  cursor: col-resize;
+  cursor: ew-resize;
 }
 
 .sidebar-resize-handle::before {
   content: "";
   position: absolute;
-  top: 50%;
-  left: 4px;
-  width: 2px;
-  height: 42px;
-  border-radius: 999px;
+  inset: 0 auto 0 5px;
+  width: 1px;
+  height: 100%;
   background: rgba(148, 163, 184, 0.42);
-  transform: translateY(-50%);
   transition:
     background-color 180ms ease,
-    height 180ms ease;
+    width 180ms ease;
 }
 
 .sidebar-resize-handle:hover::before,
 .sidebar-resize-handle:focus-visible::before {
-  height: 64px;
+  width: 3px;
   background: rgba(15, 118, 110, 0.72);
 }
 
@@ -315,6 +313,12 @@ body.is-sidebar-resizing {
   min-width: 0;
 }
 
+.sidebar-upload-card .sidebar-period-list {
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .sidebar-upload-card .period-card {
   position: relative;
   gap: 6px;
@@ -359,7 +363,7 @@ body.is-sidebar-resizing {
 .sidebar-upload-card .file-drop {
   width: 100%;
   min-width: 0;
-  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px;
   min-height: 0;
@@ -396,6 +400,9 @@ body.is-sidebar-resizing {
   padding: 5px 8px;
   border-radius: 9px;
   font-size: 11px;
+  max-width: 74px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   box-shadow: none;
   white-space: nowrap;
 }
@@ -421,8 +428,7 @@ body.is-sidebar-resizing {
 }
 
 .sidebar-upload-card .file-clear-button:disabled {
-  background: rgba(248, 250, 252, 0.78);
-  color: var(--neutral);
+  display: none;
 }
 
 .sidebar-panel {
