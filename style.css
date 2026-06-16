@@ -182,6 +182,7 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
 }
 
 .sidebar-brand__meta {
+  position: relative;
   display: inline-flex !important;
   align-items: center;
   gap: 6px;
@@ -197,7 +198,6 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
 }
 
 .sidebar-info-button {
-  position: relative;
   display: inline-grid;
   flex: 0 0 auto;
   place-items: center;
@@ -224,12 +224,12 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
 
 .sidebar-info-tooltip {
   position: absolute;
-  top: calc(100% + 9px);
-  right: 0;
+  top: calc(100% + 10px);
+  left: 0;
   z-index: 45;
   display: block;
-  width: min(260px, calc(var(--sidebar-width) - 36px));
-  max-width: calc(100vw - 40px);
+  width: min(270px, max(190px, calc(var(--sidebar-width) - 72px)));
+  max-width: calc(100vw - 48px);
   margin-top: 0 !important;
   padding: 10px 12px;
   border: 1px solid rgba(226, 232, 240, 0.95);
