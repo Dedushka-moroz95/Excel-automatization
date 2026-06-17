@@ -864,6 +864,7 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
 }
 
 .workspace-section {
+  position: relative;
   display: grid;
   gap: 14px;
   scroll-margin-top: 24px;
@@ -882,6 +883,11 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
   border-color: #cbd5e1;
 }
 
+.workspace-section:has(.help-button:hover),
+.workspace-section:has(.help-button:focus-visible) {
+  z-index: 25;
+}
+
 .section-anchor {
   display: block;
   width: 100%;
@@ -890,6 +896,8 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
 }
 
 .section-title {
+  position: relative;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -938,6 +946,7 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
 
 .help-button {
   position: relative;
+  z-index: 35;
   display: inline-grid;
   flex: 0 0 auto;
   place-items: center;
@@ -966,7 +975,7 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
   position: absolute;
   top: calc(100% + 12px);
   left: 50%;
-  z-index: 40;
+  z-index: 120;
   width: min(320px, calc(100vw - 56px));
   padding: 12px 14px;
   border: 1px solid rgba(226, 232, 240, 0.95);
@@ -2516,6 +2525,7 @@ html.theme-dark .summary-card,
 html.theme-dark .mover-card,
 html.theme-dark .history-card,
 html.theme-dark .modal-card,
+html.theme-dark .help-tooltip,
 html.theme-dark .sidebar-info-tooltip {
   border-color: var(--border);
   background: rgba(23, 29, 38, 0.88);
@@ -2524,6 +2534,11 @@ html.theme-dark .sidebar-info-tooltip {
 
 html.theme-dark .app-sidebar {
   box-shadow: 12px 0 36px rgba(0, 0, 0, 0.22);
+}
+
+html.theme-dark .help-tooltip::before {
+  border-color: var(--border);
+  background: rgba(23, 29, 38, 0.88);
 }
 
 html.theme-dark .sidebar-control-card,
