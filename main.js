@@ -136,6 +136,9 @@
       }
     });
     window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener("operationalAnalytics:themechange", function () {
+      renderChart();
+    });
 
     dom.chartMetricSelect.addEventListener("change", function () {
       state.selectedChartMetricId = dom.chartMetricSelect.value;

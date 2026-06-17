@@ -4,6 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Операционная аналитика</title>
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem("operationalAnalytics.theme") === "dark") {
+            document.documentElement.classList.add("theme-dark");
+          }
+        } catch (_error) {}
+      })();
+    </script>
     <link rel="stylesheet" href="./style.css" />
     <script src="./vendor/xlsx.full.min.js" defer></script>
     <script src="./vendor/chart.umd.min.js" defer></script>
@@ -20,6 +29,7 @@
     <script src="./src/motion.js" defer></script>
     <script src="./src/navigation.js" defer></script>
     <script src="./src/sidebarResize.js" defer></script>
+    <script src="./src/theme.js" defer></script>
     <script src="./main.js" defer></script>
   </head>
   <body>
@@ -59,6 +69,11 @@
             История
           </a>
         </nav>
+
+        <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false">
+          <span class="theme-toggle__icon" aria-hidden="true"></span>
+          <span id="themeToggleLabel">Темная тема</span>
+        </button>
 
         <div class="sidebar-control-stack" aria-label="Управление анализом">
           <section class="sidebar-control-card sidebar-upload-card" aria-label="Файлы периодов">

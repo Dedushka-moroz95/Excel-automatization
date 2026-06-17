@@ -24,6 +24,24 @@
   --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+html.theme-dark {
+  color-scheme: dark;
+  --bg: #0f141b;
+  --card: #171d26;
+  --card-soft: #111821;
+  --primary: #14b8a6;
+  --primary-soft: rgba(20, 184, 166, 0.16);
+  --primary-bright: #2dd4bf;
+  --text: #eef4f8;
+  --text-secondary: #9aa8b7;
+  --border: rgba(148, 163, 184, 0.22);
+  --success: #22c55e;
+  --danger: #fb7185;
+  --warning: #fbbf24;
+  --neutral: #64748b;
+  --shadow-soft: 0 18px 44px rgba(0, 0, 0, 0.26);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -44,6 +62,15 @@ body {
   font-family:
     Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   line-height: 1.45;
+  transition:
+    background-color 360ms ease,
+    color 240ms ease;
+}
+
+html.theme-dark body {
+  background:
+    radial-gradient(circle at 8% -8%, rgba(20, 184, 166, 0.16), transparent 30%),
+    linear-gradient(180deg, #121922 0%, var(--bg) 360px);
 }
 
 button,
@@ -81,7 +108,7 @@ body.is-sidebar-resizing * {
   inset: 0 auto 0 0;
   z-index: 30;
   display: grid;
-  grid-template-rows: auto auto auto;
+  grid-template-rows: auto auto auto auto;
   align-content: start;
   gap: 18px;
   width: var(--sidebar-width);
@@ -313,6 +340,63 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
 .sidebar-link.is-active .sidebar-link__icon {
   background: var(--primary);
   color: #ffffff;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid rgba(226, 232, 240, 0.92);
+  border-radius: 14px;
+  background: rgba(248, 250, 252, 0.82);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(15, 118, 110, 0.24);
+  background: var(--card-soft);
+  color: var(--text);
+  outline: none;
+}
+
+.theme-toggle__icon {
+  position: relative;
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.theme-toggle__icon::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: inset -4px -2px 0 0 currentColor;
+}
+
+.theme-toggle[data-theme="dark"] .theme-toggle__icon::before {
+  width: 10px;
+  height: 10px;
+  background: currentColor;
+  box-shadow:
+    0 -6px 0 -4px currentColor,
+    0 6px 0 -4px currentColor,
+    6px 0 0 -4px currentColor,
+    -6px 0 0 -4px currentColor;
 }
 
 .sidebar-control-stack {
@@ -2420,6 +2504,174 @@ input:disabled {
   gap: 12px;
 }
 
+html.theme-dark .app-sidebar,
+html.theme-dark .workspace-section,
+html.theme-dark .preview-panel,
+html.theme-dark .results-panel,
+html.theme-dark .chart-panel,
+html.theme-dark .summary-card,
+html.theme-dark .mover-card,
+html.theme-dark .history-card,
+html.theme-dark .modal-card,
+html.theme-dark .sidebar-info-tooltip {
+  border-color: var(--border);
+  background: rgba(23, 29, 38, 0.88);
+  color: var(--text);
+}
+
+html.theme-dark .app-sidebar {
+  box-shadow: 12px 0 36px rgba(0, 0, 0, 0.22);
+}
+
+html.theme-dark .sidebar-control-card,
+html.theme-dark .sidebar-panel,
+html.theme-dark .theme-toggle,
+html.theme-dark .empty-state,
+html.theme-dark .filter-status,
+html.theme-dark .data-quality-inline.neutral,
+html.theme-dark .table-meta,
+html.theme-dark .history-empty-card,
+html.theme-dark .mover-card .movers-grid > div,
+html.theme-dark .quality-item,
+html.theme-dark .quality-more {
+  border-color: var(--border);
+  background: rgba(17, 24, 33, 0.86);
+  color: var(--text-secondary);
+}
+
+html.theme-dark .sidebar-link:hover,
+html.theme-dark .sidebar-link:focus-visible,
+html.theme-dark .button-secondary:hover:not(:disabled),
+html.theme-dark .history-card:hover,
+html.theme-dark .preview-panel:hover,
+html.theme-dark .results-panel:hover,
+html.theme-dark .summary-card:hover,
+html.theme-dark .mover-card:hover,
+html.theme-dark .chart-panel:hover {
+  border-color: rgba(148, 163, 184, 0.34);
+  background: rgba(23, 29, 38, 0.96);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
+html.theme-dark .sidebar-link.is-active {
+  border-color: rgba(20, 184, 166, 0.34);
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.18), rgba(17, 24, 33, 0.96));
+  box-shadow: none;
+}
+
+html.theme-dark select,
+html.theme-dark input[type="text"],
+html.theme-dark .button-secondary,
+html.theme-dark .modal-close,
+html.theme-dark .file-drop,
+html.theme-dark .metric-row,
+html.theme-dark .metric-name strong {
+  border-color: var(--border);
+  background: rgba(15, 20, 27, 0.86);
+  color: var(--text);
+}
+
+html.theme-dark select:hover,
+html.theme-dark input[type="text"]:hover,
+html.theme-dark select:focus,
+html.theme-dark input[type="text"]:focus,
+html.theme-dark .file-drop:hover {
+  border-color: rgba(20, 184, 166, 0.42);
+  background: rgba(23, 29, 38, 0.96);
+}
+
+html.theme-dark .file-drop,
+html.theme-dark .file-drop:hover {
+  background:
+    linear-gradient(rgba(15, 20, 27, 0.9), rgba(15, 20, 27, 0.9)) padding-box,
+    linear-gradient(135deg, rgba(20, 184, 166, 0.42), rgba(148, 163, 184, 0.22)) border-box;
+}
+
+html.theme-dark .file-drop__button,
+html.theme-dark .button-primary,
+html.theme-dark .sidebar-link.is-active .sidebar-link__icon {
+  color: #ffffff;
+}
+
+html.theme-dark .file-clear-button,
+html.theme-dark .period-remove,
+html.theme-dark .icon-button,
+html.theme-dark .history-delete-button {
+  border-color: rgba(251, 113, 133, 0.22);
+  background: rgba(251, 113, 133, 0.12);
+  color: var(--danger);
+}
+
+html.theme-dark .table-scroll,
+html.theme-dark .results-panel .table-scroll,
+html.theme-dark th,
+html.theme-dark .results-table th,
+html.theme-dark .results-table th:first-child,
+html.theme-dark .results-table td:first-child,
+html.theme-dark .results-table tbody tr:nth-child(even) td:first-child,
+html.theme-dark .results-table tbody tr:hover td:first-child {
+  background: rgba(17, 24, 33, 0.96);
+}
+
+html.theme-dark tbody tr:nth-child(even) td {
+  background: rgba(30, 41, 59, 0.32);
+}
+
+html.theme-dark tbody tr:hover td {
+  background: rgba(20, 184, 166, 0.1);
+}
+
+html.theme-dark th,
+html.theme-dark td {
+  border-color: rgba(148, 163, 184, 0.18);
+}
+
+html.theme-dark .summary-card:first-child {
+  border-color: rgba(20, 184, 166, 0.42);
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.96), rgba(20, 184, 166, 0.78));
+}
+
+html.theme-dark .chart-panel {
+  background:
+    linear-gradient(180deg, rgba(23, 29, 38, 0.96), rgba(17, 24, 33, 0.92));
+}
+
+html.theme-dark .history-card--pinned {
+  border-color: rgba(20, 184, 166, 0.34);
+  background:
+    linear-gradient(135deg, rgba(20, 184, 166, 0.14), rgba(23, 29, 38, 0.94));
+}
+
+html.theme-dark .modal-backdrop {
+  background: rgba(3, 7, 18, 0.58);
+}
+
+html.theme-dark .data-quality-inline.ok,
+html.theme-dark .warning-item.ok,
+html.theme-dark .status-pill.good {
+  border-color: rgba(34, 197, 94, 0.24);
+  background: rgba(34, 197, 94, 0.12);
+  color: #86efac;
+}
+
+html.theme-dark .data-quality-inline.warn,
+html.theme-dark .warning-item,
+html.theme-dark .status-pill.warn {
+  border-color: rgba(251, 191, 36, 0.24);
+  background: rgba(251, 191, 36, 0.12);
+  color: #fcd34d;
+}
+
+html.theme-dark .data-quality-inline.error,
+html.theme-dark .warning-item.error,
+html.theme-dark .status-pill.bad,
+html.theme-dark .metric-row--invalid,
+html.theme-dark .metric-row--invalid .metric-name strong {
+  border-color: rgba(251, 113, 133, 0.26);
+  background: rgba(251, 113, 133, 0.12);
+  color: #fda4af;
+}
+
 .motion-ready .reveal-item {
   --motion-y: 18px;
   --hover-y: 0px;
@@ -2580,6 +2832,11 @@ input:disabled {
     white-space: nowrap;
   }
 
+  .theme-toggle {
+    grid-column: 1 / -1;
+    width: min(100%, 220px);
+  }
+
   .sidebar-control-stack {
     grid-column: 1 / -1;
     grid-template-columns: repeat(6, minmax(220px, 1fr));
@@ -2666,6 +2923,7 @@ input:disabled {
 
   .sidebar-brand,
   .sidebar-nav,
+  .theme-toggle,
   .sidebar-control-stack {
     grid-column: 1;
   }

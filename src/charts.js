@@ -70,6 +70,7 @@
     });
     const chartValueFormat = getChartValueFormat(rows);
     const waitForViewport = shouldWaitForViewport(canvas, targetData);
+    const themeColors = getThemeColors();
 
     deltaChart = new global.Chart(canvas, {
       type: "bar",
@@ -131,12 +132,14 @@
           },
           tooltip: {
             position: "cursorWithinBar",
-            backgroundColor: "#18212F",
-            borderColor: "rgba(255, 255, 255, 0.08)",
+            backgroundColor: themeColors.tooltipBackground,
+            borderColor: themeColors.tooltipBorder,
             borderWidth: 1,
             caretPadding: 10,
             cornerRadius: 14,
             displayColors: false,
+            titleColor: themeColors.tooltipText,
+            bodyColor: themeColors.tooltipText,
             padding: 12,
             titleFont: {
               family: "Inter, system-ui, sans-serif",
@@ -168,7 +171,7 @@
               display: false,
             },
             ticks: {
-              color: "#94A3B8",
+              color: themeColors.axisMuted,
               padding: 8,
               callback: function (value) {
                 return Normalizers.formatMetricDelta(Number(value), chartValueFormat, 1);
@@ -189,7 +192,7 @@
             },
             ticks: {
               autoSkip: false,
-              color: "#667085",
+              color: themeColors.axisText,
               padding: 10,
               font: {
                 family: "Inter, system-ui, sans-serif",
@@ -341,6 +344,22 @@
     });
 
     return row ? "percent" : "number";
+  }
+
+  function getThemeColors() {
+    const styles = global.getComputedStyle(document.documentElement);
+    const text = styles.getPropertyValue("--text").trim() || "#18212F";
+    const secondary = styles.getPropertyValue("--text-secondary").trim() || "#667085";
+    const neutral = styles.getPropertyValue("--neutral").trim() || "#94A3B8";
+    const isDark = document.documentElement.classList.contains("theme-dark");
+
+    return {
+      axisText: secondary,
+      axisMuted: neutral,
+      tooltipBackground: isDark ? "#F8FAFC" : text,
+      tooltipBorder: isDark ? "rgba(15, 23, 42, 0.12)" : "rgba(255, 255, 255, 0.08)",
+      tooltipText: isDark ? "#18212F" : "#FFFFFF",
+    };
   }
 
   App.Charts = {
