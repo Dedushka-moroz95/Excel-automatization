@@ -2706,19 +2706,6 @@ html.theme-dark .metric-row--invalid .metric-name strong {
 }
 
 @media (min-width: 1100px) {
-  .workspace-section > .section-title {
-    position: sticky;
-    top: 12px;
-    z-index: 9;
-    padding: 6px 0;
-    margin: -6px 0;
-    border: 0;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    backdrop-filter: none;
-  }
-
   .period-toolbar,
   .action-row {
     position: sticky;
