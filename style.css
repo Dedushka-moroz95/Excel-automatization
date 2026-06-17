@@ -55,7 +55,7 @@ html {
 body {
   min-height: 100vh;
   margin: 0;
-  background: linear-gradient(180deg, #fbfdfe 0%, var(--bg) 360px);
+  background-color: var(--bg);
   color: var(--text);
   font-family:
     Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -63,10 +63,6 @@ body {
   transition:
     background-color 180ms ease,
     color 160ms ease;
-}
-
-html.theme-dark body {
-  background: linear-gradient(180deg, #121922 0%, var(--bg) 360px);
 }
 
 button,
