@@ -20,6 +20,7 @@
 
   function cacheDom() {
     dom.dependencyStatus = document.getElementById("dependencyStatus");
+    dom.periodSourceModeSelect = document.getElementById("periodSourceModeSelect");
     dom.periodList = document.getElementById("periodList");
     dom.addPeriodButton = document.getElementById("addPeriodButton");
     dom.comparisonModeSelect = document.getElementById("comparisonModeSelect");
@@ -92,6 +93,11 @@
   }
 
   function bindEvents() {
+    dom.periodSourceModeSelect.addEventListener("change", function () {
+      state.periodSourceMode = dom.periodSourceModeSelect.value;
+      clearAnalysis();
+      renderAll();
+    });
     dom.addPeriodButton.addEventListener("click", addPeriod);
     dom.comparisonModeSelect.addEventListener("change", function () {
       state.comparisonMode = dom.comparisonModeSelect.value;
@@ -282,7 +288,9 @@
   }
 
   function renderAll() {
+    dom.periodSourceModeSelect.value = state.periodSourceMode || "multiFile";
     dom.comparisonModeSelect.value = state.comparisonMode;
+    dom.addPeriodButton.disabled = isSingleFileSourceMode();
     renderPeriodUploads();
     renderPreviews();
     renderColumnMapping();
@@ -294,6 +302,17 @@
   }
 
   function renderPeriodUploads() {
+    if (isSingleFileSourceMode()) {
+      dom.periodList.className = "period-list sidebar-period-list";
+      dom.periodList.innerHTML =
+        '<div class="single-file-mode-note">' +
+        "<strong>Один файл</strong>" +
+        "<span>На следующем этапе здесь появится загрузка одного файла и выбор колонки периода.</span>" +
+        "</div>";
+      return;
+    }
+
+    dom.periodList.className = "period-list sidebar-period-list";
     dom.periodList.innerHTML = state.periods.map(renderPeriodCard).join("");
   }
 
@@ -354,6 +373,14 @@
   function renderPreviews() {
     dom.previewList.innerHTML = "";
 
+    if (isSingleFileSourceMode()) {
+      const panel = document.createElement("div");
+      panel.className = "preview-panel empty-state";
+      panel.textContent = "Режим одного файла: preview появится после настройки выбора колонки периода";
+      dom.previewList.appendChild(panel);
+      return;
+    }
+
     state.periods.forEach(function (period) {
       const panel = document.createElement("div");
       panel.className = "preview-panel empty-state";
@@ -363,6 +390,13 @@
   }
 
   function renderColumnMapping() {
+    if (isSingleFileSourceMode()) {
+      dom.mapperControls.className = "mapper-controls empty-state";
+      dom.mapperControls.textContent = "Выбор объекта и колонки периода будет добавлен на следующем этапе";
+      dom.addMetricButton.disabled = true;
+      return;
+    }
+
     if (!state.periods.length) {
       dom.mapperControls.className = "mapper-controls empty-state";
       dom.mapperControls.textContent = "Добавьте период";
@@ -406,6 +440,13 @@
   }
 
   function renderMetrics() {
+    if (isSingleFileSourceMode()) {
+      dom.metricList.className = "metric-list empty-state";
+      dom.metricList.textContent = "Сначала будет настроена загрузка одного файла с периодами внутри";
+      dom.analyzeButton.disabled = true;
+      return;
+    }
+
     if (areAllPeriodsLoaded()) {
       syncMetricLabels();
     }
@@ -589,6 +630,10 @@
   }
 
   function isReadyToAnalyze() {
+    if (isSingleFileSourceMode()) {
+      return false;
+    }
+
     return Boolean(
       areIdsReady() &&
         state.mapping.metrics.length &&
@@ -748,6 +793,7 @@
       title: title,
       pinned: false,
       meta: {
+        periodSourceMode: state.periodSourceMode || "multiFile",
         comparisonMode: state.comparisonMode,
         periodCount: comparison && comparison.periods ? comparison.periods.length : state.periods.length,
         metricCount: metrics.length,
@@ -759,6 +805,7 @@
       },
       metrics: metrics,
       settings: {
+        periodSourceMode: state.periodSourceMode || "multiFile",
         comparisonMode: state.comparisonMode,
         selectedChartMetricId: state.selectedChartMetricId,
         idColumns: idColumns.length ? idColumns : restoredSettings.idColumns || [],
@@ -883,6 +930,7 @@
     }
 
     state.messages = [];
+    state.periodSourceMode = record.settings.periodSourceMode || record.meta.periodSourceMode || "multiFile";
     state.comparisonMode = record.settings.comparisonMode || record.meta.comparisonMode || record.comparison.comparisonMode || "endpoint";
     state.comparison = cloneJson(record.comparison);
     state.analytics = cloneJson(record.analytics);
@@ -1028,8 +1076,12 @@
   }
 
   function renderWarningsPanel() {
-    dom.warningsPanel.dataset.hasFiles = hasAnyLoadedPeriod() ? "true" : "false";
+    dom.warningsPanel.dataset.hasFiles = isSingleFileSourceMode() || hasAnyLoadedPeriod() ? "true" : "false";
     App.UI.renderWarnings(dom.warningsPanel, collectWarnings());
+  }
+
+  function isSingleFileSourceMode() {
+    return state.periodSourceMode === "singleFile";
   }
 
   function hasAnyLoadedPeriod() {
@@ -1308,6 +1360,14 @@
 
   function collectWarnings() {
     const warnings = state.messages.slice();
+
+    if (isSingleFileSourceMode()) {
+      warnings.push({
+        type: "neutral",
+        message: "Режим «Один файл» добавлен как первый этап. Загрузка одного файла и выбор колонки периода будут подключены следующим этапом.",
+      });
+      return warnings;
+    }
 
     state.periods.forEach(function (period) {
       if (period.table) {

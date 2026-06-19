@@ -616,6 +616,25 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
   display: none;
 }
 
+.single-file-mode-note {
+  display: grid;
+  gap: 5px;
+  padding: 10px;
+  border: 1px dashed rgba(15, 118, 110, 0.24);
+  border-radius: 14px;
+  background: var(--card-soft);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.single-file-mode-note strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 850;
+}
+
 .sidebar-mapping-card {
   gap: 9px;
   overflow: hidden;
@@ -2119,6 +2138,13 @@ input:disabled {
   background: var(--success);
 }
 
+.quality-item.neutral,
+.warning-item.neutral {
+  border-color: var(--border);
+  background: var(--card-soft);
+  color: var(--text-secondary);
+}
+
 .dashboard-layout {
   grid-template-columns: 1fr;
   gap: 14px;
@@ -2667,6 +2693,11 @@ html.theme-dark .sidebar-upload-card .file-drop:hover {
   background: rgba(15, 20, 27, 0.86);
 }
 
+html.theme-dark .single-file-mode-note {
+  border-color: rgba(148, 163, 184, 0.22);
+  background: rgba(15, 20, 27, 0.86);
+}
+
 html.theme-dark .file-drop,
 html.theme-dark .file-drop:hover {
   background:
@@ -2747,6 +2778,13 @@ html.theme-dark .status-pill.warn {
   border-color: rgba(251, 191, 36, 0.24);
   background: rgba(251, 191, 36, 0.12);
   color: #fcd34d;
+}
+
+html.theme-dark .quality-item.neutral,
+html.theme-dark .warning-item.neutral {
+  border-color: var(--border);
+  background: rgba(17, 24, 33, 0.86);
+  color: var(--text-secondary);
 }
 
 html.theme-dark .data-quality-inline.error,

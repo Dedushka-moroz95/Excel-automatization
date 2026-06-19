@@ -78,6 +78,13 @@
         <div class="sidebar-control-stack" aria-label="Управление анализом">
           <section class="sidebar-control-card sidebar-upload-card" aria-label="Файлы периодов">
             <span class="sidebar-panel__label">Файлы периодов</span>
+            <label class="field sidebar-field">
+              <span>Источник</span>
+              <select id="periodSourceModeSelect">
+                <option value="multiFile">Несколько файлов</option>
+                <option value="singleFile">Один файл</option>
+              </select>
+            </label>
             <div id="periodList" class="period-list sidebar-period-list"></div>
           </section>
 

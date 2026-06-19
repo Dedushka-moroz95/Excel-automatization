@@ -3,6 +3,7 @@
 
   function createInitialState() {
     return {
+      periodSourceMode: "multiFile",
       periods: [createPeriod(0), createPeriod(1)],
       comparisonMode: "endpoint",
       mapping: {

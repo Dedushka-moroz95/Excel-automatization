@@ -116,15 +116,29 @@
     const errorCount = warnings.filter(function (warning) {
       return warning.type === "error";
     }).length;
-    const warnCount = warnings.length - errorCount;
-    const tone = !hasFiles ? "neutral" : errorCount ? "error" : warnings.length ? "warn" : "ok";
-    const title = !hasFiles ? "Проверок пока нет" : errorCount ? "Нужна проверка" : warnings.length ? "Есть предупреждения" : "Файлы готовы";
+    const actionableWarnings = warnings.filter(function (warning) {
+      return warning.type !== "neutral";
+    }).length;
+    const warnCount = actionableWarnings - errorCount;
+    const hasOnlyNeutralMessages = warnings.length && !actionableWarnings;
+    const tone = !hasFiles ? "neutral" : errorCount ? "error" : actionableWarnings ? "warn" : hasOnlyNeutralMessages ? "neutral" : "ok";
+    const title = !hasFiles
+      ? "Проверок пока нет"
+      : errorCount
+        ? "Нужна проверка"
+        : actionableWarnings
+          ? "Есть предупреждения"
+          : hasOnlyNeutralMessages
+            ? "Режим выбран"
+            : "Файлы готовы";
     const summary = !hasFiles
       ? "Загрузите файлы, чтобы увидеть статус"
       : errorCount
         ? "Ошибок: " + errorCount + ", предупреждений: " + warnCount
-        : warnings.length
-          ? "Предупреждений: " + warnings.length
+        : actionableWarnings
+          ? "Предупреждений: " + actionableWarnings
+          : hasOnlyNeutralMessages
+            ? "Подробности в деталях"
           : "Критичных проблем не найдено";
 
     setClassName(container, "data-quality-inline " + tone);
