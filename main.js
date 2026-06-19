@@ -95,6 +95,7 @@
   function bindEvents() {
     dom.periodSourceModeSelect.addEventListener("change", function () {
       state.periodSourceMode = dom.periodSourceModeSelect.value;
+      state.messages = [];
       clearAnalysis();
       renderAll();
     });
@@ -174,6 +175,11 @@
   }
 
   function handlePeriodChange(event) {
+    if (event.target.name === "singleFile") {
+      handleSingleFileChange(event.target.files[0]);
+      return;
+    }
+
     if (event.target.name === "periodFile") {
       handleFileChange(event.target.dataset.periodId, event.target.files[0]);
       return;
@@ -192,6 +198,11 @@
     }
 
     const periodId = actionButton.dataset.periodId;
+
+    if (actionButton.dataset.action === "clear-single-file") {
+      clearSingleFile();
+      return;
+    }
 
     if (actionButton.dataset.action === "clear-period-file") {
       clearPeriodFile(periodId);
@@ -214,6 +225,18 @@
       delete metric.columns[periodId];
     });
 
+    clearAnalysis();
+    renderAll();
+  }
+
+  function clearSingleFile() {
+    state.singleFile = App.createSingleFileSource ? App.createSingleFileSource() : {
+      file: null,
+      table: null,
+      periodColumn: "",
+      loading: false,
+    };
+    state.messages = [];
     clearAnalysis();
     renderAll();
   }
@@ -277,6 +300,39 @@
     }
   }
 
+  async function handleSingleFileChange(file) {
+    const singleFile = ensureSingleFileSource();
+
+    if (!file) {
+      return;
+    }
+
+    singleFile.loading = true;
+    renderPeriodUploads();
+
+    try {
+      state.messages = [];
+      const table = await App.ExcelReader.readExcelFile(file);
+      singleFile.file = file;
+      singleFile.table = table;
+      singleFile.periodColumn = "";
+      singleFile.loading = false;
+      clearAnalysis();
+      renderAll();
+    } catch (error) {
+      singleFile.loading = false;
+      singleFile.file = file;
+      singleFile.table = null;
+      singleFile.periodColumn = "";
+      state.messages.push({
+        type: "error",
+        message: error.message,
+      });
+      clearAnalysis();
+      renderAll();
+    }
+  }
+
   function clearAnalysis() {
     state.comparison = null;
     state.analytics = null;
@@ -304,16 +360,47 @@
   function renderPeriodUploads() {
     if (isSingleFileSourceMode()) {
       dom.periodList.className = "period-list sidebar-period-list";
-      dom.periodList.innerHTML =
-        '<div class="single-file-mode-note">' +
-        "<strong>Один файл</strong>" +
-        "<span>На следующем этапе здесь появится загрузка одного файла и выбор колонки периода.</span>" +
-        "</div>";
+      dom.periodList.innerHTML = renderSingleFileCard();
       return;
     }
 
     dom.periodList.className = "period-list sidebar-period-list";
     dom.periodList.innerHTML = state.periods.map(renderPeriodCard).join("");
+  }
+
+  function renderSingleFileCard() {
+    const singleFile = ensureSingleFileSource();
+    const fileName = singleFile.loading
+      ? "Чтение файла..."
+      : singleFile.table
+        ? singleFile.file.name
+        : singleFile.file
+          ? "Ошибка чтения"
+          : "Файл не выбран";
+    const clearFileDisabled = singleFile.loading || (!singleFile.file && !singleFile.table) ? " disabled" : "";
+
+    return (
+      '<div class="period-card single-file-card">' +
+      '<div class="single-file-mode-note">' +
+      "<strong>Один файл</strong>" +
+      "<span>Загрузите файл, где периоды находятся в одной из колонок.</span>" +
+      "</div>" +
+      '<label class="file-drop file-drop--compact">' +
+      '<span class="file-drop__label">Один файл</span>' +
+      '<span class="file-drop__hint">Excel, CSV или TSV</span>' +
+      '<span class="file-drop__button">Загрузить</span>' +
+      '<input name="singleFile" type="file" accept=".xlsx,.xls,.csv,.tsv" />' +
+      "<strong>" +
+      App.UI.escapeHtml(fileName) +
+      "</strong>" +
+      "</label>" +
+      '<div class="period-file-actions">' +
+      '<button class="button button-secondary file-clear-button" type="button" data-action="clear-single-file" title="Удалить файл" aria-label="Удалить файл"' +
+      clearFileDisabled +
+      ">×</button>" +
+      "</div>" +
+      "</div>"
+    );
   }
 
   function renderPeriodCard(period, index) {
@@ -376,8 +463,8 @@
     if (isSingleFileSourceMode()) {
       const panel = document.createElement("div");
       panel.className = "preview-panel empty-state";
-      panel.textContent = "Режим одного файла: preview появится после настройки выбора колонки периода";
       dom.previewList.appendChild(panel);
+      App.UI.renderPreview(panel, ensureSingleFileSource().table, "Загрузите один файл");
       return;
     }
 
@@ -391,8 +478,7 @@
 
   function renderColumnMapping() {
     if (isSingleFileSourceMode()) {
-      dom.mapperControls.className = "mapper-controls empty-state";
-      dom.mapperControls.textContent = "Выбор объекта и колонки периода будет добавлен на следующем этапе";
+      renderSingleFileColumnMapping();
       dom.addMetricButton.disabled = true;
       return;
     }
@@ -407,6 +493,43 @@
     dom.mapperControls.className = "mapper-controls";
     dom.mapperControls.innerHTML = state.periods.map(renderIdColumnSelect).join("");
     dom.addMetricButton.disabled = !areIdsReady();
+  }
+
+  function renderSingleFileColumnMapping() {
+    const singleFile = ensureSingleFileSource();
+
+    if (!singleFile.table) {
+      dom.mapperControls.className = "mapper-controls empty-state";
+      dom.mapperControls.textContent = "Загрузите один файл для выбора колонки периода";
+      return;
+    }
+
+    dom.mapperControls.className = "mapper-controls";
+    dom.mapperControls.innerHTML =
+      '<label class="field"><span>Колонка периода</span><select name="singlePeriodColumn">' +
+      buildColumnOptions(singleFile.table, singleFile.periodColumn, "Выберите колонку периода") +
+      "</select></label>" +
+      renderSingleFilePeriodSummary();
+  }
+
+  function renderSingleFilePeriodSummary() {
+    const singleFile = ensureSingleFileSource();
+
+    if (!singleFile.table || !singleFile.periodColumn) {
+      return '<div class="single-file-mode-note"><strong>Периоды не выбраны</strong><span>Выберите колонку с датой, месяцем, неделей или годом.</span></div>';
+    }
+
+    const values = getSingleFilePeriodValues();
+    const preview = values.slice(0, 4).join(", ");
+    const rest = values.length > 4 ? " +" + (values.length - 4) : "";
+
+    return (
+      '<div class="single-file-mode-note"><strong>Найдено периодов: ' +
+      values.length +
+      "</strong><span>" +
+      App.UI.escapeHtml(preview + rest) +
+      "</span></div>"
+    );
   }
 
   function renderIdColumnSelect(period) {
@@ -424,6 +547,13 @@
   }
 
   function handleMappingChange(event) {
+    if (event.target.name === "singlePeriodColumn") {
+      ensureSingleFileSource().periodColumn = event.target.value;
+      clearAnalysis();
+      renderAll();
+      return;
+    }
+
     if (event.target.name !== "idColumn") {
       return;
     }
@@ -940,6 +1070,7 @@
       (state.mapping.metrics[0] ? state.mapping.metrics[0].id : "");
     resetGlobalFiltersState();
     state.periods = restorePeriods(record);
+    state.singleFile = App.createSingleFileSource ? App.createSingleFileSource() : null;
     state.restoredHistoryMeta = cloneJson(record.meta || {});
     state.restoredHistorySettings = cloneJson(record.settings || {});
     hasUnsavedAnalysis = false;
@@ -1082,6 +1213,50 @@
 
   function isSingleFileSourceMode() {
     return state.periodSourceMode === "singleFile";
+  }
+
+  function ensureSingleFileSource() {
+    if (!state.singleFile) {
+      state.singleFile = App.createSingleFileSource ? App.createSingleFileSource() : {
+        file: null,
+        table: null,
+        periodColumn: "",
+        loading: false,
+      };
+    }
+
+    return state.singleFile;
+  }
+
+  function getSingleFilePeriodValues() {
+    const singleFile = ensureSingleFileSource();
+
+    if (!singleFile.table || !singleFile.periodColumn) {
+      return [];
+    }
+
+    const seen = new Set();
+    const values = [];
+
+    singleFile.table.rows.forEach(function (row) {
+      const value = row.values[singleFile.periodColumn];
+
+      if (App.Normalizers.isEmptyValue(value)) {
+        return;
+      }
+
+      const label = App.Normalizers.toText(value).trim().replace(/\s+/g, " ");
+      const key = App.Normalizers.normalizeKey(label);
+
+      if (!key || seen.has(key)) {
+        return;
+      }
+
+      seen.add(key);
+      values.push(label);
+    });
+
+    return values;
   }
 
   function hasAnyLoadedPeriod() {
@@ -1362,10 +1537,33 @@
     const warnings = state.messages.slice();
 
     if (isSingleFileSourceMode()) {
-      warnings.push({
-        type: "neutral",
-        message: "Режим «Один файл» добавлен как первый этап. Загрузка одного файла и выбор колонки периода будут подключены следующим этапом.",
-      });
+      const singleFile = ensureSingleFileSource();
+
+      if (singleFile.table) {
+        warnings.push.apply(warnings, singleFile.table.warnings);
+      }
+
+      if (!singleFile.table) {
+        warnings.push({
+          type: "neutral",
+          message: "Загрузите один файл, чтобы выбрать колонку периода.",
+        });
+      } else if (!singleFile.periodColumn) {
+        warnings.push({
+          type: "neutral",
+          message: "Файл загружен. Выберите колонку, в которой указаны даты, месяцы, недели или годы.",
+        });
+      } else {
+        const periodValues = getSingleFilePeriodValues();
+        warnings.push({
+          type: periodValues.length >= 2 ? "neutral" : "warn",
+          message:
+            periodValues.length >= 2
+              ? "Колонка периода выбрана. Найдено периодов: " + periodValues.length + "."
+              : "В выбранной колонке периода найдено меньше двух уникальных значений.",
+        });
+      }
+
       return warnings;
     }
 

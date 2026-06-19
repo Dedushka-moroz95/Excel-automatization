@@ -4,6 +4,7 @@
   function createInitialState() {
     return {
       periodSourceMode: "multiFile",
+      singleFile: createSingleFileSource(),
       periods: [createPeriod(0), createPeriod(1)],
       comparisonMode: "endpoint",
       mapping: {
@@ -24,6 +25,15 @@
       deltaMax: "",
       objectQuery: "",
       departmentQuery: "",
+    };
+  }
+
+  function createSingleFileSource() {
+    return {
+      file: null,
+      table: null,
+      periodColumn: "",
+      loading: false,
     };
   }
 
@@ -49,6 +59,7 @@
 
   App.state = createInitialState();
   App.createInitialState = createInitialState;
+  App.createSingleFileSource = createSingleFileSource;
   App.createGlobalFilters = createGlobalFilters;
   App.createPeriod = createPeriod;
   App.createMetric = createMetric;
