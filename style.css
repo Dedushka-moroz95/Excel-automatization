@@ -1236,7 +1236,8 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
   transition:
     transform 220ms var(--ease-premium),
     border-color 160ms ease,
-    box-shadow 160ms ease;
+    box-shadow 160ms ease,
+    background-color 160ms ease;
 }
 
 .preview-panel:hover,
@@ -2376,6 +2377,12 @@ input:disabled {
   font-size: 13px;
   font-weight: 700;
   line-height: 1.35;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    transform 220ms var(--ease-premium);
 }
 
 .preview-panel.empty-state,
@@ -2385,6 +2392,13 @@ input:disabled {
   display: flex;
   align-items: center;
   min-height: 58px;
+}
+
+.preview-panel.empty-state:hover,
+.results-panel.empty-state:hover {
+  border-color: rgba(15, 118, 110, 0.18);
+  background-color: #ffffff;
+  box-shadow: 0 10px 24px rgba(24, 33, 47, 0.04);
 }
 
 .muted {
@@ -2575,6 +2589,13 @@ html.theme-dark .chart-panel:hover {
   border-color: rgba(148, 163, 184, 0.34);
   background: rgba(23, 29, 38, 0.96);
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
+html.theme-dark .preview-panel.empty-state:hover,
+html.theme-dark .results-panel.empty-state:hover {
+  border-color: rgba(20, 184, 166, 0.24);
+  background: rgba(30, 41, 59, 0.58);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
 }
 
 html.theme-dark .sidebar-link.is-active {
