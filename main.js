@@ -1,6 +1,7 @@
 (function () {
   const App = window.OperationalAnalytics;
   const state = App.state;
+  const SINGLE_FILE_METRIC_COLUMN_KEY = "__singleFileMetricColumn";
 
   const dom = {};
   let historyRecords = [];
@@ -234,6 +235,7 @@
       file: null,
       table: null,
       periodColumn: "",
+      idColumn: "",
       virtualPeriods: [],
       warnings: [],
       loading: false,
@@ -318,6 +320,7 @@
       singleFile.file = file;
       singleFile.table = table;
       singleFile.periodColumn = "";
+      singleFile.idColumn = "";
       singleFile.virtualPeriods = [];
       singleFile.warnings = [];
       singleFile.loading = false;
@@ -328,6 +331,7 @@
       singleFile.file = file;
       singleFile.table = null;
       singleFile.periodColumn = "";
+      singleFile.idColumn = "";
       singleFile.virtualPeriods = [];
       singleFile.warnings = [];
       state.messages.push({
@@ -498,7 +502,7 @@
   function renderColumnMapping() {
     if (isSingleFileSourceMode()) {
       renderSingleFileColumnMapping();
-      dom.addMetricButton.disabled = true;
+      dom.addMetricButton.disabled = !isSingleFileReadyForMetrics();
       return;
     }
 
@@ -519,12 +523,15 @@
 
     if (!singleFile.table) {
       dom.mapperControls.className = "mapper-controls empty-state";
-      dom.mapperControls.textContent = "Загрузите один файл для выбора колонки периода";
+      dom.mapperControls.textContent = "Загрузите один файл для выбора объекта и колонки периода";
       return;
     }
 
     dom.mapperControls.className = "mapper-controls";
     dom.mapperControls.innerHTML =
+      '<label class="field"><span>Объект</span><select name="singleIdColumn">' +
+      buildColumnOptions(singleFile.table, singleFile.idColumn, "Выберите объект") +
+      "</select></label>" +
       '<label class="field"><span>Колонка периода</span><select name="singlePeriodColumn">' +
       buildColumnOptions(singleFile.table, singleFile.periodColumn, "Выберите колонку периода") +
       "</select></label>" +
@@ -570,6 +577,13 @@
   }
 
   function handleMappingChange(event) {
+    if (event.target.name === "singleIdColumn") {
+      ensureSingleFileSource().idColumn = event.target.value;
+      clearAnalysis();
+      renderAll();
+      return;
+    }
+
     if (event.target.name === "singlePeriodColumn") {
       ensureSingleFileSource().periodColumn = event.target.value;
       rebuildSingleFileVirtualPeriods();
@@ -595,9 +609,7 @@
 
   function renderMetrics() {
     if (isSingleFileSourceMode()) {
-      dom.metricList.className = "metric-list empty-state";
-      dom.metricList.textContent = "Сначала будет настроена загрузка одного файла с периодами внутри";
-      dom.analyzeButton.disabled = true;
+      renderSingleFileMetrics();
       return;
     }
 
@@ -629,6 +641,78 @@
     dom.metricList.className = "metric-list";
     dom.metricList.innerHTML = state.mapping.metrics.map(renderMetricRow).join("");
     dom.analyzeButton.disabled = !isReadyToAnalyze();
+  }
+
+  function renderSingleFileMetrics() {
+    const setupMessage = getSingleFileMetricSetupMessage();
+
+    if (setupMessage) {
+      dom.metricList.className = "metric-list empty-state";
+      dom.metricList.textContent = setupMessage;
+      dom.analyzeButton.disabled = true;
+      return;
+    }
+
+    syncMetricLabels();
+
+    if (!state.mapping.metrics.length) {
+      dom.metricList.className = "metric-list empty-state";
+      dom.metricList.textContent = "Добавьте показатель";
+      dom.analyzeButton.disabled = true;
+      return;
+    }
+
+    dom.metricList.className = "metric-list";
+    dom.metricList.innerHTML = state.mapping.metrics.map(renderSingleFileMetricRow).join("");
+    dom.analyzeButton.disabled = !isReadyToAnalyze();
+  }
+
+  function getSingleFileMetricSetupMessage() {
+    const singleFile = ensureSingleFileSource();
+
+    if (!singleFile.table) {
+      return "Загрузите один файл";
+    }
+
+    if (!singleFile.idColumn) {
+      return "Выберите объект для сравнения";
+    }
+
+    if (!singleFile.periodColumn) {
+      return "Выберите колонку периода";
+    }
+
+    if (singleFile.idColumn === singleFile.periodColumn) {
+      return "Колонка объекта и колонка периода должны отличаться";
+    }
+
+    if (getSingleFileVirtualPeriods().length < 2) {
+      return "В файле должно быть минимум два периода";
+    }
+
+    return "";
+  }
+
+  function renderSingleFileMetricRow(metric) {
+    const hasColumn = Boolean(getSingleFileMetricColumn(metric));
+
+    return (
+      '<div class="metric-row' +
+      (hasColumn ? "" : " metric-row--invalid") +
+      '" data-metric-id="' +
+      metric.id +
+      '">' +
+      '<div class="metric-name"><span>Показатель</span><strong>' +
+      App.UI.escapeHtml(metric.label || "Выберите столбец") +
+      "</strong></div>" +
+      '<label class="field"><span>Колонка в файле</span><select name="singleMetricColumn" data-metric-id="' +
+      metric.id +
+      '">' +
+      buildColumnOptions(ensureSingleFileSource().table, getSingleFileMetricColumn(metric), "Выберите показатель") +
+      "</select></label>" +
+      '<button class="icon-button" type="button" data-action="remove-metric" title="Удалить показатель">×</button>' +
+      "</div>"
+    );
   }
 
   function renderMetricRow(metric) {
@@ -696,9 +780,13 @@
   function addMetric() {
     const columns = {};
 
-    state.periods.forEach(function (period) {
-      columns[period.id] = getDefaultMetricColumn(period);
-    });
+    if (isSingleFileSourceMode()) {
+      columns[SINGLE_FILE_METRIC_COLUMN_KEY] = getDefaultSingleFileMetricColumn();
+    } else {
+      state.periods.forEach(function (period) {
+        columns[period.id] = getDefaultMetricColumn(period);
+      });
+    }
 
     state.mapping.metrics.push(App.createMetric(state.mapping.metrics.length, columns));
     clearAnalysis();
@@ -717,7 +805,38 @@
     return header ? header.id : "";
   }
 
+  function getDefaultSingleFileMetricColumn() {
+    const singleFile = ensureSingleFileSource();
+
+    if (!singleFile.table) {
+      return "";
+    }
+
+    const header = singleFile.table.headers.find(function (item) {
+      return item.id !== singleFile.idColumn && item.id !== singleFile.periodColumn;
+    });
+
+    return header ? header.id : "";
+  }
+
   function handleMetricInput(event) {
+    if (event.target.name === "singleMetricColumn") {
+      const row = event.target.closest("[data-metric-id]");
+      const metric = row ? findMetric(row.dataset.metricId) : null;
+
+      if (!metric) {
+        return;
+      }
+
+      metric.columns[SINGLE_FILE_METRIC_COLUMN_KEY] = event.target.value;
+      syncMetricLabels();
+      clearAnalysis();
+      renderMetrics();
+      renderAnalysis();
+      renderWarningsPanel();
+      return;
+    }
+
     if (event.target.name !== "metricColumn") {
       return;
     }
@@ -765,6 +884,46 @@
     });
   }
 
+  function getSingleFileMetricColumn(metric) {
+    return metric && metric.columns ? metric.columns[SINGLE_FILE_METRIC_COLUMN_KEY] || "" : "";
+  }
+
+  function getComparisonPeriods() {
+    if (!isSingleFileSourceMode()) {
+      return state.periods;
+    }
+
+    const singleFile = ensureSingleFileSource();
+
+    return getSingleFileVirtualPeriods().map(function (period) {
+      return Object.assign({}, period, {
+        idColumn: singleFile.idColumn,
+      });
+    });
+  }
+
+  function getComparisonMetrics(periods) {
+    if (!isSingleFileSourceMode()) {
+      return state.mapping.metrics;
+    }
+
+    const comparisonPeriods = periods || getComparisonPeriods();
+
+    return state.mapping.metrics.map(function (metric) {
+      const columnId = getSingleFileMetricColumn(metric);
+      const columns = {};
+
+      comparisonPeriods.forEach(function (period) {
+        columns[period.id] = columnId;
+      });
+
+      return Object.assign({}, metric, {
+        label: getSingleFileMetricLabel(metric) || metric.label,
+        columns: columns,
+      });
+    });
+  }
+
   function areAllPeriodsLoaded() {
     return (
       state.periods.length >= 2 &&
@@ -783,9 +942,31 @@
     );
   }
 
+  function isSingleFileReadyForMetrics() {
+    const singleFile = ensureSingleFileSource();
+
+    return Boolean(
+      singleFile.table &&
+        singleFile.idColumn &&
+        singleFile.periodColumn &&
+        singleFile.idColumn !== singleFile.periodColumn &&
+        getSingleFileVirtualPeriods().length >= 2
+    );
+  }
+
+  function areSingleFileMetricsReady() {
+    return (
+      isSingleFileReadyForMetrics() &&
+      state.mapping.metrics.length > 0 &&
+      state.mapping.metrics.every(function (metric) {
+        return Boolean(getSingleFileMetricColumn(metric));
+      })
+    );
+  }
+
   function isReadyToAnalyze() {
     if (isSingleFileSourceMode()) {
-      return false;
+      return areSingleFileMetricsReady();
     }
 
     return Boolean(
@@ -809,16 +990,21 @@
       if (!metricIssues.length) {
         state.messages.push({
           type: "error",
-          message: "Для расчета нужны минимум два загруженных периода, колонки с объектами сравнения и хотя бы один показатель",
+          message: isSingleFileSourceMode()
+            ? "Для расчета выберите объект, колонку периода и хотя бы один показатель в загруженном файле"
+            : "Для расчета нужны минимум два загруженных периода, колонки с объектами сравнения и хотя бы один показатель",
         });
       }
       renderAll();
       return;
     }
 
+    const comparisonPeriods = getComparisonPeriods();
+    const comparisonMetrics = getComparisonMetrics(comparisonPeriods);
+
     state.comparison = App.Comparator.comparePeriods({
-      periods: state.periods,
-      metrics: state.mapping.metrics,
+      periods: comparisonPeriods,
+      metrics: comparisonMetrics,
       comparisonMode: state.comparisonMode,
     });
 
@@ -962,6 +1148,15 @@
         periodSourceMode: state.periodSourceMode || "multiFile",
         comparisonMode: state.comparisonMode,
         selectedChartMetricId: state.selectedChartMetricId,
+        singleFile:
+          state.periodSourceMode === "singleFile"
+            ? {
+                periodColumn: ensureSingleFileSource().periodColumn || "",
+                periodColumnName: getTableColumnName(ensureSingleFileSource().table, ensureSingleFileSource().periodColumn) || "",
+                idColumn: ensureSingleFileSource().idColumn || "",
+                idColumnName: getTableColumnName(ensureSingleFileSource().table, ensureSingleFileSource().idColumn) || "",
+              }
+            : null,
         idColumns: idColumns.length ? idColumns : restoredSettings.idColumns || [],
       },
       comparison: comparison,
@@ -970,6 +1165,25 @@
   }
 
   function getIdColumnMetadata() {
+    if (isSingleFileSourceMode()) {
+      const singleFile = ensureSingleFileSource();
+      const periods = state.comparison && Array.isArray(state.comparison.periods) ? state.comparison.periods : getSingleFileVirtualPeriods();
+      const columnName = getTableColumnName(singleFile.table, singleFile.idColumn) || "";
+
+      if (!singleFile.idColumn) {
+        return [];
+      }
+
+      return periods.map(function (period) {
+        return {
+          periodId: period.id,
+          periodLabel: period.label,
+          columnId: singleFile.idColumn,
+          columnName: columnName,
+        };
+      });
+    }
+
     return state.periods.map(function (period) {
       return {
         periodId: period.id,
@@ -1245,6 +1459,7 @@
         file: null,
         table: null,
         periodColumn: "",
+        idColumn: "",
         virtualPeriods: [],
         warnings: [],
         loading: false,
@@ -1546,6 +1761,10 @@
   }
 
   function getMetricLabel(metric) {
+    if (isSingleFileSourceMode()) {
+      return getSingleFileMetricLabel(metric);
+    }
+
     const lastPeriod = state.periods[state.periods.length - 1];
     const firstPeriod = state.periods[0];
 
@@ -1556,12 +1775,20 @@
     );
   }
 
+  function getSingleFileMetricLabel(metric) {
+    return getTableColumnName(ensureSingleFileSource().table, getSingleFileMetricColumn(metric));
+  }
+
   function getColumnName(period, columnId) {
-    if (!period || !period.table || !columnId) {
+    return getTableColumnName(period ? period.table : null, columnId);
+  }
+
+  function getTableColumnName(table, columnId) {
+    if (!table || !columnId) {
       return "";
     }
 
-    const header = period.table.headers.find(function (item) {
+    const header = table.headers.find(function (item) {
       return item.id === columnId;
     });
 
@@ -1581,12 +1808,22 @@
       if (!singleFile.table) {
         warnings.push({
           type: "neutral",
-          message: "Загрузите один файл, чтобы выбрать колонку периода.",
+          message: "Загрузите один файл, чтобы выбрать объект и колонку периода.",
+        });
+      } else if (!singleFile.idColumn) {
+        warnings.push({
+          type: "neutral",
+          message: "Файл загружен. Выберите колонку с объектом сравнения: сотрудником, командой, логином или другим ключом.",
         });
       } else if (!singleFile.periodColumn) {
         warnings.push({
           type: "neutral",
           message: "Файл загружен. Выберите колонку, в которой указаны даты, месяцы, недели или годы.",
+        });
+      } else if (singleFile.idColumn === singleFile.periodColumn) {
+        warnings.push({
+          type: "error",
+          message: "Колонка объекта и колонка периода должны отличаться.",
         });
       } else {
         const periodValues = getSingleFilePeriodValues();
@@ -1598,6 +1835,17 @@
               ? "Колонка периода выбрана. Найдено периодов: " + periodValues.length + "."
               : "В выбранной колонке периода найдено меньше двух уникальных значений.",
         });
+
+        if (periodValues.length >= 2 && !state.mapping.metrics.length) {
+          warnings.push({
+            type: "neutral",
+            message: "Добавьте показатель для сравнения виртуальных периодов.",
+          });
+        }
+      }
+
+      if (state.comparison) {
+        appendComparisonWarnings(warnings);
       }
 
       return warnings;
@@ -1629,6 +1877,10 @@
   }
 
   function getMetricSelectionIssues() {
+    if (isSingleFileSourceMode()) {
+      return [];
+    }
+
     if (!areIdsReady() || !state.mapping.metrics.length) {
       return [];
     }
