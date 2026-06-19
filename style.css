@@ -2550,6 +2550,23 @@ html.theme-dark .app-sidebar {
   box-shadow: 12px 0 36px rgba(0, 0, 0, 0.22);
 }
 
+html.theme-dark .help-button,
+html.theme-dark .sidebar-info-button {
+  border-color: rgba(45, 212, 191, 0.28);
+  background: rgba(20, 184, 166, 0.14);
+  color: var(--primary-bright);
+}
+
+html.theme-dark .help-button:hover,
+html.theme-dark .help-button:focus-visible,
+html.theme-dark .sidebar-info-button:hover,
+html.theme-dark .sidebar-info-button:focus-visible {
+  border-color: rgba(45, 212, 191, 0.42);
+  background: rgba(20, 184, 166, 0.22);
+  box-shadow: 0 10px 24px rgba(20, 184, 166, 0.12);
+  color: #5eead4;
+}
+
 html.theme-dark .help-tooltip {
   border-color: var(--border);
   background: var(--card);
