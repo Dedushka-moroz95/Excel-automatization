@@ -2386,6 +2386,11 @@ input:disabled {
 }
 
 .preview-panel.empty-state,
+.results-panel.empty-state {
+  box-shadow: none;
+}
+
+.preview-panel.empty-state,
 .results-panel.empty-state,
 .summary-grid.empty-state,
 .history-list.empty-state {
@@ -2396,9 +2401,10 @@ input:disabled {
 
 .preview-panel.empty-state:hover,
 .results-panel.empty-state:hover {
-  border-color: rgba(15, 118, 110, 0.18);
-  background-color: #ffffff;
-  box-shadow: 0 10px 24px rgba(24, 33, 47, 0.04);
+  transform: none;
+  border-color: #cbd5e1;
+  background: var(--card-soft);
+  box-shadow: none;
 }
 
 .muted {
@@ -2610,9 +2616,9 @@ html.theme-dark .chart-panel:hover {
 
 html.theme-dark .preview-panel.empty-state:hover,
 html.theme-dark .results-panel.empty-state:hover {
-  border-color: rgba(20, 184, 166, 0.24);
-  background: rgba(30, 41, 59, 0.58);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.14);
+  border-color: var(--border);
+  background: rgba(17, 24, 33, 0.86);
+  box-shadow: none;
 }
 
 html.theme-dark .sidebar-link.is-active {
