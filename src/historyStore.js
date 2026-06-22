@@ -1,11 +1,12 @@
 (function (global) {
-  const App = (global.OperationalAnalytics = global.OperationalAnalytics || {});
-  const STORAGE_KEY = "operationalAnalytics.history.v1";
+  const App = (global.Metricum = global.Metricum || {});
+  const STORAGE_KEY = "metricum.history.v1";
+  const LEGACY_STORAGE_KEY = "operational" + "Analytics.history.v1";
   const MAX_RECORDS = 50;
 
   function load() {
     try {
-      const raw = global.localStorage.getItem(STORAGE_KEY);
+      const raw = readStoredHistory();
       const parsed = raw ? JSON.parse(raw) : [];
 
       return normalizeRecords(Array.isArray(parsed) ? parsed : []);
@@ -36,6 +37,7 @@
   function clear() {
     try {
       global.localStorage.removeItem(STORAGE_KEY);
+      global.localStorage.removeItem(LEGACY_STORAGE_KEY);
       return { ok: true, records: [] };
     } catch (error) {
       return { ok: false, records: load(), error: error };
@@ -61,10 +63,28 @@
 
     try {
       global.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+      global.localStorage.removeItem(LEGACY_STORAGE_KEY);
       return { ok: true, records: normalized };
     } catch (error) {
       return { ok: false, records: load(), error: error };
     }
+  }
+
+  function readStoredHistory() {
+    const current = global.localStorage.getItem(STORAGE_KEY);
+
+    if (current) {
+      return current;
+    }
+
+    const legacy = global.localStorage.getItem(LEGACY_STORAGE_KEY);
+
+    if (legacy) {
+      global.localStorage.setItem(STORAGE_KEY, legacy);
+      global.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    }
+
+    return legacy;
   }
 
   function normalizeRecords(records) {

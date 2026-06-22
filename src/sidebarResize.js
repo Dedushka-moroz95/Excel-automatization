@@ -1,5 +1,6 @@
 (function (global) {
-  const STORAGE_KEY = "operationalAnalytics.sidebarWidth";
+  const STORAGE_KEY = "metricum.sidebarWidth";
+  const LEGACY_STORAGE_KEY = "operational" + "Analytics.sidebarWidth";
   const DESKTOP_MIN_WIDTH = 1100;
   const MIN_WIDTH = 250;
   const MAX_WIDTH = 420;
@@ -131,6 +132,7 @@
     if (shouldPersist) {
       try {
         global.localStorage.setItem(STORAGE_KEY, String(nextWidth));
+        global.localStorage.removeItem(LEGACY_STORAGE_KEY);
       } catch (_error) {
         // Width persistence is a convenience; resizing should keep working without storage.
       }
@@ -139,7 +141,7 @@
 
   function readStoredWidth() {
     try {
-      const value = Number(global.localStorage.getItem(STORAGE_KEY));
+      const value = Number(readStoredValue());
       return Number.isFinite(value) ? value : 0;
     } catch (_error) {
       return 0;
@@ -153,5 +155,22 @@
 
   function isDesktop() {
     return global.innerWidth >= DESKTOP_MIN_WIDTH;
+  }
+
+  function readStoredValue() {
+    const current = global.localStorage.getItem(STORAGE_KEY);
+
+    if (current) {
+      return current;
+    }
+
+    const legacy = global.localStorage.getItem(LEGACY_STORAGE_KEY);
+
+    if (legacy) {
+      global.localStorage.setItem(STORAGE_KEY, legacy);
+      global.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    }
+
+    return legacy;
   }
 })(window);

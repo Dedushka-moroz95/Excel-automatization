@@ -1,5 +1,5 @@
 (function () {
-  const App = window.OperationalAnalytics;
+  const App = window.Metricum;
   const state = App.state;
   const SINGLE_FILE_METRIC_COLUMN_KEY = "__singleFileMetricColumn";
 
@@ -156,7 +156,7 @@
       }
     });
     window.addEventListener("beforeunload", handleBeforeUnload);
-    window.addEventListener("operationalAnalytics:themechange", function () {
+    window.addEventListener("metricum:themechange", function () {
       renderChart();
     });
 

@@ -1,5 +1,5 @@
 (function (global) {
-  const App = (global.OperationalAnalytics = global.OperationalAnalytics || {});
+  const App = (global.Metricum = global.Metricum || {});
   const REVEAL_SELECTOR = [
     ".app-header",
     ".workspace-section",

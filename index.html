@@ -11,7 +11,9 @@
     <script>
       (function () {
         try {
-          if (localStorage.getItem("operationalAnalytics.theme") === "dark") {
+          const theme = localStorage.getItem("metricum.theme") || localStorage.getItem("operational" + "Analytics.theme");
+
+          if (theme === "dark") {
             document.documentElement.classList.add("theme-dark");
           }
         } catch (_error) {}

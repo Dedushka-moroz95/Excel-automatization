@@ -1,5 +1,5 @@
 (function (global) {
-  const App = (global.OperationalAnalytics = global.OperationalAnalytics || {});
+  const App = (global.Metricum = global.Metricum || {});
   const Normalizers = App.Normalizers;
 
   function comparePeriods(options) {

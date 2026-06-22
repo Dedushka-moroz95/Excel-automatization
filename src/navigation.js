@@ -1,5 +1,5 @@
 (function (global) {
-  const App = (global.OperationalAnalytics = global.OperationalAnalytics || {});
+  const App = (global.Metricum = global.Metricum || {});
   const LINK_SELECTOR = ".sidebar-link[href^='#']";
   const ACTIVE_CLASS = "is-active";
   const ACTIVE_LOCK_TIMEOUT_MS = 1400;

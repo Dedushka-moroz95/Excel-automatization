@@ -1,5 +1,5 @@
 (function (global) {
-  const App = (global.OperationalAnalytics = global.OperationalAnalytics || {});
+  const App = (global.Metricum = global.Metricum || {});
 
   function toText(value) {
     if (value === null || value === undefined) {

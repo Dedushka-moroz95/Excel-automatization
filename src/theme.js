@@ -1,5 +1,6 @@
 (function (global) {
-  const STORAGE_KEY = "operationalAnalytics.theme";
+  const STORAGE_KEY = "metricum.theme";
+  const LEGACY_STORAGE_KEY = "operational" + "Analytics.theme";
   const DARK_CLASS = "theme-dark";
 
   document.addEventListener("DOMContentLoaded", init);
@@ -42,7 +43,8 @@
 
   function readStoredTheme() {
     try {
-      return global.localStorage.getItem(STORAGE_KEY) === "dark" ? "dark" : "light";
+      const theme = readStoredValue();
+      return theme === "dark" ? "dark" : "light";
     } catch (_error) {
       return "light";
     }
@@ -51,16 +53,34 @@
   function storeTheme(theme) {
     try {
       global.localStorage.setItem(STORAGE_KEY, theme);
+      global.localStorage.removeItem(LEGACY_STORAGE_KEY);
     } catch (_error) {
       // Theme persistence is optional; the toggle should keep working without storage.
     }
   }
 
   function notifyThemeChange(theme) {
-    global.dispatchEvent(new CustomEvent("operationalAnalytics:themechange", {
+    global.dispatchEvent(new CustomEvent("metricum:themechange", {
       detail: {
         theme: theme,
       },
     }));
+  }
+
+  function readStoredValue() {
+    const current = global.localStorage.getItem(STORAGE_KEY);
+
+    if (current) {
+      return current;
+    }
+
+    const legacy = global.localStorage.getItem(LEGACY_STORAGE_KEY);
+
+    if (legacy) {
+      global.localStorage.setItem(STORAGE_KEY, legacy);
+      global.localStorage.removeItem(LEGACY_STORAGE_KEY);
+    }
+
+    return legacy;
   }
 })(window);

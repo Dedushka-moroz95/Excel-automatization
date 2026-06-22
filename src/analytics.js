@@ -1,5 +1,5 @@
 (function (global) {
-  const App = (global.OperationalAnalytics = global.OperationalAnalytics || {});
+  const App = (global.Metricum = global.Metricum || {});
 
   function buildAnalytics(comparison, metrics) {
     const metricSummaries = metrics.map(function (metric) {
