@@ -16,6 +16,12 @@
           if (theme === "dark") {
             document.documentElement.classList.add("theme-dark");
           }
+
+          const density = localStorage.getItem("metricum.density");
+
+          if (density === "compact" || density === "dense") {
+            document.documentElement.classList.add("density-" + density);
+          }
         } catch (_error) {}
       })();
     </script>
@@ -79,11 +85,6 @@
             История
           </a>
         </nav>
-
-        <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false">
-          <span class="theme-toggle__icon" aria-hidden="true"></span>
-          <span id="themeToggleLabel">Темная тема</span>
-        </button>
 
         <div class="sidebar-control-stack" aria-label="Управление анализом">
           <section class="sidebar-control-card sidebar-upload-card" aria-label="Файлы периодов">
@@ -200,6 +201,46 @@
       </aside>
 
       <button class="sidebar-resize-handle" type="button" aria-label="Изменить ширину боковой панели"></button>
+
+      <div class="app-preferences" aria-label="Настройки интерфейса">
+        <button id="themeToggle" class="theme-toggle preference-button" type="button" aria-pressed="false" aria-label="Включить темную тему" title="Включить темную тему">
+          <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <path d="M21 13.2A8 8 0 1 1 10.8 3a6.4 6.4 0 0 0 10.2 10.2Z"></path>
+          </svg>
+          <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2.2"></path>
+            <path d="M12 19.8V22"></path>
+            <path d="m4.9 4.9 1.6 1.6"></path>
+            <path d="m17.5 17.5 1.6 1.6"></path>
+            <path d="M2 12h2.2"></path>
+            <path d="M19.8 12H22"></path>
+            <path d="m4.9 19.1 1.6-1.6"></path>
+            <path d="m17.5 6.5 1.6-1.6"></path>
+          </svg>
+        </button>
+        <div class="density-control">
+          <button id="densityToggle" class="preference-button density-toggle" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Плотность интерфейса" title="Плотность интерфейса">
+            <svg class="preference-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="10.5" cy="10.5" r="6"></circle>
+              <path d="m15.2 15.2 5 5"></path>
+              <path d="M10.5 7.5v6"></path>
+              <path d="M7.5 10.5h6"></path>
+            </svg>
+          </button>
+          <div id="densityMenu" class="density-menu" role="menu" aria-label="Плотность интерфейса" hidden>
+            <button class="density-option" type="button" role="menuitemradio" data-density-option="comfortable" aria-checked="true">
+              Комфортно
+            </button>
+            <button class="density-option" type="button" role="menuitemradio" data-density-option="compact" aria-checked="false">
+              Компактно
+            </button>
+            <button class="density-option" type="button" role="menuitemradio" data-density-option="dense" aria-checked="false">
+              Плотно
+            </button>
+          </div>
+        </div>
+      </div>
 
       <div class="app-main">
         <main class="app-shell">
