@@ -20,6 +20,7 @@
   --sidebar-width: 300px;
   --sidebar-min-width: 250px;
   --sidebar-max-width: 420px;
+  --ui-zoom: 1;
   --ease: 0.16s ease;
   --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -87,6 +88,7 @@ input[type="file"],
 
 .app-layout {
   min-height: 100vh;
+  zoom: var(--ui-zoom);
 }
 
 body.is-sidebar-resizing,
@@ -353,6 +355,18 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
   background: rgba(255, 255, 255, 0.82);
   box-shadow: 0 14px 34px rgba(24, 33, 47, 0.08);
   backdrop-filter: blur(18px);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.app-preferences.is-dragging {
+  cursor: grabbing;
+  transition: none;
+}
+
+.app-preferences.is-dragging .preference-button {
+  pointer-events: none;
 }
 
 .preference-button {
@@ -398,30 +412,35 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
   display: block;
 }
 
-.density-control {
+.zoom-control {
   position: relative;
 }
 
-.density-menu {
+.zoom-menu {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
   display: grid;
   gap: 4px;
-  min-width: 152px;
+  min-width: 118px;
+  max-height: min(360px, calc(100vh - 92px));
   padding: 6px;
   border: 1px solid rgba(226, 232, 240, 0.92);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 18px 44px rgba(24, 33, 47, 0.12);
   backdrop-filter: blur(18px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  cursor: default;
 }
 
-.density-menu[hidden] {
+.zoom-menu[hidden] {
   display: none;
 }
 
-.density-option {
+.zoom-option {
   min-height: 34px;
   padding: 8px 10px;
   border: 0;
@@ -430,18 +449,18 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 850;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
 }
 
-.density-option:hover,
-.density-option:focus-visible {
+.zoom-option:hover,
+.zoom-option:focus-visible {
   background: var(--card-soft);
   color: var(--text);
   outline: none;
 }
 
-.density-option[aria-checked="true"] {
+.zoom-option[aria-checked="true"] {
   background: var(--primary-soft);
   color: var(--primary);
 }
@@ -2686,193 +2705,6 @@ input:disabled {
   font-weight: 800;
 }
 
-html.density-compact .app-shell,
-html.density-dense .app-shell {
-  width: min(var(--container), calc(100% - 36px));
-  margin-top: 14px;
-}
-
-html.density-compact .app-shell {
-  gap: 12px;
-}
-
-html.density-dense .app-shell {
-  gap: 10px;
-}
-
-html.density-compact .app-sidebar,
-html.density-dense .app-sidebar {
-  gap: 12px;
-  padding: 18px 14px;
-}
-
-html.density-compact .sidebar-control-stack,
-html.density-dense .sidebar-control-stack {
-  gap: 8px;
-}
-
-html.density-compact .sidebar-control-card,
-html.density-dense .sidebar-control-card {
-  gap: 8px;
-  padding: 12px;
-  border-radius: 16px;
-}
-
-html.density-compact .workspace-section {
-  gap: 12px;
-  padding: 12px;
-  border-radius: 20px;
-}
-
-html.density-dense .workspace-section {
-  gap: 10px;
-  padding: 10px;
-  border-radius: 18px;
-}
-
-html.density-compact .section-title h2 {
-  font-size: clamp(16px, 1.5vw, 19px);
-}
-
-html.density-dense .section-title h2 {
-  font-size: clamp(15px, 1.35vw, 18px);
-}
-
-html.density-compact .step-index,
-html.density-dense .step-index {
-  width: 28px;
-  height: 28px;
-  font-size: 10px;
-}
-
-html.density-compact .help-button,
-html.density-dense .help-button {
-  width: 20px;
-  height: 20px;
-  font-size: 10px;
-}
-
-html.density-compact .preview-panel,
-html.density-compact .results-panel,
-html.density-compact .chart-panel,
-html.density-compact .summary-card,
-html.density-dense .preview-panel,
-html.density-dense .results-panel,
-html.density-dense .chart-panel,
-html.density-dense .summary-card {
-  border-radius: 16px;
-}
-
-html.density-compact .table-meta,
-html.density-dense .table-meta {
-  padding: 8px 10px;
-  font-size: 11px;
-}
-
-html.density-compact table {
-  font-size: 13px;
-}
-
-html.density-dense table {
-  font-size: 12px;
-}
-
-html.density-compact th,
-html.density-compact td {
-  padding: 8px 10px;
-}
-
-html.density-dense th,
-html.density-dense td {
-  padding: 6px 8px;
-}
-
-html.density-compact .results-table {
-  font-size: 12px;
-}
-
-html.density-dense .results-table {
-  font-size: 11.5px;
-}
-
-html.density-compact .results-table th,
-html.density-compact .results-table td {
-  padding: 7px 9px;
-}
-
-html.density-dense .results-table th,
-html.density-dense .results-table td {
-  padding: 6px 8px;
-}
-
-html.density-compact .result-cell strong,
-html.density-dense .result-cell strong {
-  min-height: 20px;
-  font-size: 13px;
-}
-
-html.density-compact .result-cell span,
-html.density-dense .result-cell span {
-  font-size: 10px;
-}
-
-html.density-compact .summary-grid,
-html.density-dense .summary-grid,
-html.density-compact .movers-grid,
-html.density-dense .movers-grid {
-  gap: 8px;
-}
-
-html.density-compact .summary-card {
-  min-height: 78px;
-  padding: 12px;
-}
-
-html.density-dense .summary-card {
-  min-height: 68px;
-  padding: 10px;
-}
-
-html.density-compact .summary-card strong {
-  font-size: clamp(22px, 2vw, 30px);
-}
-
-html.density-dense .summary-card strong {
-  font-size: clamp(20px, 1.8vw, 26px);
-}
-
-html.density-compact .chart-panel {
-  gap: 10px;
-  min-height: 318px;
-  padding: 14px;
-}
-
-html.density-dense .chart-panel {
-  gap: 8px;
-  min-height: 288px;
-  padding: 12px;
-}
-
-html.density-compact .chart-panel canvas {
-  height: 252px !important;
-}
-
-html.density-dense .chart-panel canvas {
-  height: 224px !important;
-}
-
-html.density-compact .empty-state {
-  min-height: 48px;
-  padding: 11px 13px;
-  font-size: 12px;
-}
-
-html.density-dense .empty-state {
-  min-height: 42px;
-  padding: 9px 11px;
-  font-size: 11px;
-}
-
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -3006,7 +2838,7 @@ html.theme-dark .sidebar-panel,
 html.theme-dark .theme-toggle,
 html.theme-dark .app-preferences,
 html.theme-dark .preference-button,
-html.theme-dark .density-menu,
+html.theme-dark .zoom-menu,
 html.theme-dark .empty-state,
 html.theme-dark .filter-status,
 html.theme-dark .autocomplete-list,
@@ -3041,8 +2873,8 @@ html.theme-dark .chart-panel:hover {
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
 }
 
-html.theme-dark .density-option:hover,
-html.theme-dark .density-option:focus-visible {
+html.theme-dark .zoom-option:hover,
+html.theme-dark .zoom-option:focus-visible {
   background: rgba(23, 29, 38, 0.96);
   color: var(--text);
 }
@@ -3433,29 +3265,6 @@ html.theme-dark .metric-row--invalid .metric-name strong {
     height: 272px !important;
   }
 
-  html.density-compact .summary-card {
-    min-height: 78px;
-  }
-
-  html.density-dense .summary-card {
-    min-height: 68px;
-  }
-
-  html.density-compact .chart-panel {
-    min-height: 318px;
-  }
-
-  html.density-dense .chart-panel {
-    min-height: 288px;
-  }
-
-  html.density-compact .chart-panel canvas {
-    height: 252px !important;
-  }
-
-  html.density-dense .chart-panel canvas {
-    height: 224px !important;
-  }
 }
 
 @media (max-width: 760px) {

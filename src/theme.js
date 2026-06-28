@@ -1,20 +1,24 @@
 (function (global) {
   const STORAGE_KEY = "metricum.theme";
-  const DENSITY_STORAGE_KEY = "metricum.density";
+  const ZOOM_STORAGE_KEY = "metricum.zoom";
+  const ZOOM_CONFIRMED_KEY = "metricum.zoomConfirmed";
+  const PREFERENCES_POSITION_KEY = "metricum.preferencesPosition";
   const LEGACY_STORAGE_KEY = "operational" + "Analytics.theme";
   const DARK_CLASS = "theme-dark";
-  const DENSITY_CLASSES = ["density-compact", "density-dense"];
-  const DENSITY_LABELS = {
-    comfortable: "Комфортно",
-    compact: "Компактно",
-    dense: "Плотно",
-  };
+  const DEFAULT_ZOOM = 100;
+  const MIN_ZOOM = 25;
+  const MAX_ZOOM = 500;
+  const DRAG_MARGIN = 8;
+  const DRAG_THRESHOLD = 4;
+
+  let dragState = null;
 
   document.addEventListener("DOMContentLoaded", init);
 
   function init() {
     initTheme();
-    initDensity();
+    initZoom();
+    initPreferencesPanel();
   }
 
   function initTheme() {
@@ -25,57 +29,77 @@
     }
 
     applyTheme(readStoredTheme());
-    syncButton(button);
+    syncThemeButton(button);
 
     button.addEventListener("click", function () {
       const nextTheme = isDarkTheme() ? "light" : "dark";
       applyTheme(nextTheme);
       storeTheme(nextTheme);
-      syncButton(button);
+      syncThemeButton(button);
       notifyThemeChange(nextTheme);
     });
   }
 
-  function initDensity() {
-    const button = document.getElementById("densityToggle");
-    const menu = document.getElementById("densityMenu");
+  function initZoom() {
+    const button = document.getElementById("zoomToggle");
+    const menu = document.getElementById("zoomMenu");
 
     if (!button || !menu) {
       return;
     }
 
-    const options = Array.from(menu.querySelectorAll("[data-density-option]"));
+    const options = Array.from(menu.querySelectorAll("[data-zoom-option]"));
 
-    applyDensity(readStoredDensity());
-    syncDensityControls(button, options);
+    applyZoom(readStoredZoom());
+    syncZoomControls(button, options);
 
     button.addEventListener("click", function (event) {
       event.stopPropagation();
-      toggleDensityMenu(button, menu);
+      toggleZoomMenu(button, menu);
     });
 
     options.forEach(function (option) {
       option.addEventListener("click", function () {
-        const density = option.dataset.densityOption || "comfortable";
+        const zoom = normalizeZoom(option.dataset.zoomOption);
 
-        applyDensity(density);
-        storeDensity(density);
-        syncDensityControls(button, options);
-        closeDensityMenu(button, menu);
-        notifyDensityChange(density);
+        applyZoom(zoom);
+        storeZoom(zoom);
+        syncZoomControls(button, options);
+        closeZoomMenu(button, menu);
+        notifyZoomChange(zoom);
       });
     });
 
     document.addEventListener("click", function (event) {
       if (!menu.hidden && !menu.contains(event.target) && event.target !== button) {
-        closeDensityMenu(button, menu);
+        closeZoomMenu(button, menu);
       }
     });
 
     document.addEventListener("keydown", function (event) {
       if (event.key === "Escape" && !menu.hidden) {
-        closeDensityMenu(button, menu);
+        closeZoomMenu(button, menu);
         button.focus();
+      }
+    });
+  }
+
+  function initPreferencesPanel() {
+    const panel = document.querySelector(".app-preferences");
+
+    if (!panel) {
+      return;
+    }
+
+    applyStoredPreferencesPosition(panel);
+
+    panel.addEventListener("pointerdown", function (event) {
+      startPreferencesDrag(event, panel);
+    });
+
+    global.addEventListener("resize", function () {
+      if (panel.dataset.positioned === "true") {
+        clampPreferencesPosition(panel);
       }
     });
   }
@@ -84,7 +108,7 @@
     document.documentElement.classList.toggle(DARK_CLASS, theme === "dark");
   }
 
-  function syncButton(button) {
+  function syncThemeButton(button) {
     const darkTheme = isDarkTheme();
     const actionLabel = darkTheme ? "Включить светлую тему" : "Включить темную тему";
 
@@ -141,91 +165,236 @@
     return legacy;
   }
 
-  function applyDensity(density) {
-    const normalizedDensity = normalizeDensity(density);
+  function applyZoom(zoom) {
+    const normalizedZoom = normalizeZoom(zoom);
+    const zoomValue = trimNumber(normalizedZoom / 100);
 
-    DENSITY_CLASSES.forEach(function (className) {
-      document.documentElement.classList.remove(className);
-    });
-
-    if (normalizedDensity !== "comfortable") {
-      document.documentElement.classList.add("density-" + normalizedDensity);
-    }
+    document.documentElement.style.setProperty("--ui-zoom", zoomValue);
   }
 
-  function syncDensityControls(button, options) {
-    const density = getCurrentDensity();
-    const label = DENSITY_LABELS[density] || DENSITY_LABELS.comfortable;
+  function syncZoomControls(button, options) {
+    const zoom = getCurrentZoom();
+    const label = "Масштаб интерфейса: " + zoom + "%";
 
-    button.dataset.density = density;
-    button.setAttribute("aria-label", "Плотность интерфейса: " + label);
-    button.setAttribute("title", "Плотность интерфейса: " + label);
+    button.dataset.zoom = String(zoom);
+    button.setAttribute("aria-label", label);
+    button.setAttribute("title", label);
 
     options.forEach(function (option) {
-      option.setAttribute("aria-checked", String(option.dataset.densityOption === density));
+      option.setAttribute("aria-checked", String(normalizeZoom(option.dataset.zoomOption) === zoom));
     });
   }
 
-  function toggleDensityMenu(button, menu) {
+  function toggleZoomMenu(button, menu) {
     if (menu.hidden) {
-      openDensityMenu(button, menu);
+      openZoomMenu(button, menu);
       return;
     }
 
-    closeDensityMenu(button, menu);
+    closeZoomMenu(button, menu);
   }
 
-  function openDensityMenu(button, menu) {
+  function openZoomMenu(button, menu) {
     menu.hidden = false;
     button.setAttribute("aria-expanded", "true");
   }
 
-  function closeDensityMenu(button, menu) {
+  function closeZoomMenu(button, menu) {
     menu.hidden = true;
     button.setAttribute("aria-expanded", "false");
   }
 
-  function getCurrentDensity() {
-    if (document.documentElement.classList.contains("density-dense")) {
-      return "dense";
+  function getCurrentZoom() {
+    const value = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--ui-zoom"));
+
+    if (!Number.isFinite(value)) {
+      return DEFAULT_ZOOM;
     }
 
-    if (document.documentElement.classList.contains("density-compact")) {
-      return "compact";
-    }
-
-    return "comfortable";
+    return normalizeZoom(Math.round(value * 100));
   }
 
-  function readStoredDensity() {
+  function readStoredZoom() {
     try {
-      return normalizeDensity(global.localStorage.getItem(DENSITY_STORAGE_KEY));
+      if (global.localStorage.getItem(ZOOM_CONFIRMED_KEY) !== "true") {
+        return DEFAULT_ZOOM;
+      }
+
+      return normalizeZoom(global.localStorage.getItem(ZOOM_STORAGE_KEY));
     } catch (_error) {
-      return "comfortable";
+      return DEFAULT_ZOOM;
     }
   }
 
-  function storeDensity(density) {
+  function storeZoom(zoom) {
     try {
-      global.localStorage.setItem(DENSITY_STORAGE_KEY, normalizeDensity(density));
+      global.localStorage.setItem(ZOOM_STORAGE_KEY, String(normalizeZoom(zoom)));
+      global.localStorage.setItem(ZOOM_CONFIRMED_KEY, "true");
+      global.localStorage.removeItem("metricum.density");
     } catch (_error) {
-      // Density persistence is optional; the controls should keep working without storage.
+      // Zoom persistence is optional; the controls should keep working without storage.
     }
   }
 
-  function normalizeDensity(density) {
-    return density === "compact" || density === "dense" ? density : "comfortable";
+  function normalizeZoom(zoom) {
+    const value = Number(zoom);
+
+    if (!Number.isFinite(value)) {
+      return DEFAULT_ZOOM;
+    }
+
+    return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(value)));
   }
 
-  function notifyDensityChange(density) {
-    global.dispatchEvent(new CustomEvent("metricum:densitychange", {
+  function notifyZoomChange(zoom) {
+    global.dispatchEvent(new CustomEvent("metricum:zoomchange", {
       detail: {
-        density: density,
+        zoom: zoom,
       },
     }));
 
     global.requestAnimationFrame(function () {
       global.dispatchEvent(new Event("resize"));
     });
+  }
+
+  function trimNumber(value) {
+    return String(Number(value.toFixed(3)));
+  }
+
+  function startPreferencesDrag(event, panel) {
+    if (
+      event.button !== 0 ||
+      event.target.closest(".preference-button") ||
+      event.target.closest(".zoom-menu")
+    ) {
+      return;
+    }
+
+    const rect = panel.getBoundingClientRect();
+
+    dragState = {
+      panel: panel,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: rect.left,
+      startTop: rect.top,
+      moved: false,
+    };
+
+    panel.setPointerCapture(event.pointerId);
+    panel.addEventListener("pointermove", movePreferencesPanel);
+    panel.addEventListener("pointerup", stopPreferencesDrag, { once: true });
+    panel.addEventListener("pointercancel", stopPreferencesDrag, { once: true });
+  }
+
+  function movePreferencesPanel(event) {
+    if (!dragState || event.pointerId !== dragState.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - dragState.startX;
+    const deltaY = event.clientY - dragState.startY;
+
+    if (!dragState.moved && Math.hypot(deltaX, deltaY) < DRAG_THRESHOLD) {
+      return;
+    }
+
+    dragState.moved = true;
+    dragState.panel.classList.add("is-dragging");
+    setPreferencesPosition(dragState.panel, dragState.startLeft + deltaX, dragState.startTop + deltaY);
+    event.preventDefault();
+  }
+
+  function stopPreferencesDrag(event) {
+    if (!dragState || event.pointerId !== dragState.pointerId) {
+      dragState = null;
+      return;
+    }
+
+    const panel = dragState.panel;
+    const moved = dragState.moved;
+
+    panel.classList.remove("is-dragging");
+    panel.removeEventListener("pointermove", movePreferencesPanel);
+    panel.removeEventListener("pointerup", stopPreferencesDrag);
+    panel.removeEventListener("pointercancel", stopPreferencesDrag);
+
+    if (panel.hasPointerCapture(event.pointerId)) {
+      panel.releasePointerCapture(event.pointerId);
+    }
+
+    if (moved) {
+      storePreferencesPosition(panel);
+      suppressNextClick(panel);
+    }
+
+    dragState = null;
+  }
+
+  function setPreferencesPosition(panel, left, top) {
+    const rect = panel.getBoundingClientRect();
+    const maxLeft = Math.max(DRAG_MARGIN, global.innerWidth - rect.width - DRAG_MARGIN);
+    const maxTop = Math.max(DRAG_MARGIN, global.innerHeight - rect.height - DRAG_MARGIN);
+    const nextLeft = Math.min(maxLeft, Math.max(DRAG_MARGIN, left));
+    const nextTop = Math.min(maxTop, Math.max(DRAG_MARGIN, top));
+
+    panel.style.left = nextLeft + "px";
+    panel.style.top = nextTop + "px";
+    panel.style.right = "auto";
+    panel.style.bottom = "auto";
+    panel.dataset.positioned = "true";
+  }
+
+  function clampPreferencesPosition(panel) {
+    const rect = panel.getBoundingClientRect();
+
+    setPreferencesPosition(panel, rect.left, rect.top);
+    storePreferencesPosition(panel);
+  }
+
+  function applyStoredPreferencesPosition(panel) {
+    const position = readPreferencesPosition();
+
+    if (!position) {
+      return;
+    }
+
+    setPreferencesPosition(panel, position.left, position.top);
+  }
+
+  function readPreferencesPosition() {
+    try {
+      const value = JSON.parse(global.localStorage.getItem(PREFERENCES_POSITION_KEY) || "null");
+
+      if (!value || !Number.isFinite(value.left) || !Number.isFinite(value.top)) {
+        return null;
+      }
+
+      return value;
+    } catch (_error) {
+      return null;
+    }
+  }
+
+  function storePreferencesPosition(panel) {
+    try {
+      const rect = panel.getBoundingClientRect();
+      global.localStorage.setItem(PREFERENCES_POSITION_KEY, JSON.stringify({
+        left: Math.round(rect.left),
+        top: Math.round(rect.top),
+      }));
+    } catch (_error) {
+      // Floating panel position is optional; dragging should keep working without storage.
+    }
+  }
+
+  function suppressNextClick(panel) {
+    panel.addEventListener("click", function preventDragClick(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      panel.removeEventListener("click", preventDragClick, true);
+    }, true);
   }
 })(window);

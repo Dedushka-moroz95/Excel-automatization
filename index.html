@@ -17,10 +17,11 @@
             document.documentElement.classList.add("theme-dark");
           }
 
-          const density = localStorage.getItem("metricum.density");
+          const zoom = Number(localStorage.getItem("metricum.zoom"));
+          const zoomConfirmed = localStorage.getItem("metricum.zoomConfirmed") === "true";
 
-          if (density === "compact" || density === "dense") {
-            document.documentElement.classList.add("density-" + density);
+          if (zoomConfirmed && Number.isFinite(zoom) && zoom >= 25 && zoom <= 500) {
+            document.documentElement.style.setProperty("--ui-zoom", String(zoom / 100));
           }
         } catch (_error) {}
       })();
@@ -47,6 +48,54 @@
     <script src="./main.js" defer></script>
   </head>
   <body>
+    <div class="app-preferences" aria-label="Настройки интерфейса">
+      <button id="themeToggle" class="theme-toggle preference-button" type="button" aria-pressed="false" aria-label="Включить темную тему" title="Включить темную тему">
+        <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M21 13.2A8 8 0 1 1 10.8 3a6.4 6.4 0 0 0 10.2 10.2Z"></path>
+        </svg>
+        <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2.2"></path>
+          <path d="M12 19.8V22"></path>
+          <path d="m4.9 4.9 1.6 1.6"></path>
+          <path d="m17.5 17.5 1.6 1.6"></path>
+          <path d="M2 12h2.2"></path>
+          <path d="M19.8 12H22"></path>
+          <path d="m4.9 19.1 1.6-1.6"></path>
+          <path d="m17.5 6.5 1.6-1.6"></path>
+        </svg>
+      </button>
+      <div class="zoom-control">
+        <button id="zoomToggle" class="preference-button zoom-toggle" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Масштаб интерфейса" title="Масштаб интерфейса">
+          <svg class="preference-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="10.5" cy="10.5" r="6"></circle>
+            <path d="m15.2 15.2 5 5"></path>
+            <path d="M10.5 7.5v6"></path>
+            <path d="M7.5 10.5h6"></path>
+          </svg>
+        </button>
+        <div id="zoomMenu" class="zoom-menu" role="menu" aria-label="Масштаб интерфейса" hidden>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="25" aria-checked="false">25%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="33" aria-checked="false">33%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="50" aria-checked="false">50%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="67" aria-checked="false">67%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="75" aria-checked="false">75%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="80" aria-checked="false">80%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="90" aria-checked="false">90%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="100" aria-checked="true">100%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="110" aria-checked="false">110%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="125" aria-checked="false">125%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="150" aria-checked="false">150%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="175" aria-checked="false">175%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="200" aria-checked="false">200%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="250" aria-checked="false">250%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="300" aria-checked="false">300%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="400" aria-checked="false">400%</button>
+          <button class="zoom-option" type="button" role="menuitemradio" data-zoom-option="500" aria-checked="false">500%</button>
+        </div>
+      </div>
+    </div>
+
     <div class="app-layout">
       <aside class="app-sidebar" aria-label="Навигация по приложению">
         <div class="sidebar-brand">
@@ -201,46 +250,6 @@
       </aside>
 
       <button class="sidebar-resize-handle" type="button" aria-label="Изменить ширину боковой панели"></button>
-
-      <div class="app-preferences" aria-label="Настройки интерфейса">
-        <button id="themeToggle" class="theme-toggle preference-button" type="button" aria-pressed="false" aria-label="Включить темную тему" title="Включить темную тему">
-          <svg class="theme-icon theme-icon--moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <path d="M21 13.2A8 8 0 1 1 10.8 3a6.4 6.4 0 0 0 10.2 10.2Z"></path>
-          </svg>
-          <svg class="theme-icon theme-icon--sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <circle cx="12" cy="12" r="4"></circle>
-            <path d="M12 2v2.2"></path>
-            <path d="M12 19.8V22"></path>
-            <path d="m4.9 4.9 1.6 1.6"></path>
-            <path d="m17.5 17.5 1.6 1.6"></path>
-            <path d="M2 12h2.2"></path>
-            <path d="M19.8 12H22"></path>
-            <path d="m4.9 19.1 1.6-1.6"></path>
-            <path d="m17.5 6.5 1.6-1.6"></path>
-          </svg>
-        </button>
-        <div class="density-control">
-          <button id="densityToggle" class="preference-button density-toggle" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="Плотность интерфейса" title="Плотность интерфейса">
-            <svg class="preference-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <circle cx="10.5" cy="10.5" r="6"></circle>
-              <path d="m15.2 15.2 5 5"></path>
-              <path d="M10.5 7.5v6"></path>
-              <path d="M7.5 10.5h6"></path>
-            </svg>
-          </button>
-          <div id="densityMenu" class="density-menu" role="menu" aria-label="Плотность интерфейса" hidden>
-            <button class="density-option" type="button" role="menuitemradio" data-density-option="comfortable" aria-checked="true">
-              Комфортно
-            </button>
-            <button class="density-option" type="button" role="menuitemradio" data-density-option="compact" aria-checked="false">
-              Компактно
-            </button>
-            <button class="density-option" type="button" role="menuitemradio" data-density-option="dense" aria-checked="false">
-              Плотно
-            </button>
-          </div>
-        </div>
-      </div>
 
       <div class="app-main">
         <main class="app-shell">
