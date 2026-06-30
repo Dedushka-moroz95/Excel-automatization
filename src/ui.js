@@ -464,6 +464,34 @@
     select.value = selectedValue || (metrics[0] ? metrics[0].id : "");
   }
 
+  function renderChartTypeSelect(select, selectedValue) {
+    if (!select) {
+      return;
+    }
+
+    const types = App.Charts && App.Charts.getChartTypes ? App.Charts.getChartTypes() : [];
+    const fallbackTypes = types.length
+      ? types
+      : [
+          { id: "bar-horizontal", label: "Динамика по объектам" },
+          { id: "bar-vertical", label: "Вертикальные столбцы" },
+          { id: "line-trend", label: "Тренд по периодам" },
+          { id: "doughnut-impact", label: "Структура изменений" },
+        ];
+
+    select.innerHTML = fallbackTypes
+      .map(function (type) {
+        return '<option value="' + escapeHtml(type.id) + '">' + escapeHtml(type.label) + "</option>";
+      })
+      .join("");
+
+    select.value = selectedValue || "bar-horizontal";
+
+    if (!select.value) {
+      select.value = "bar-horizontal";
+    }
+  }
+
   function renderHistory(container, records, options) {
     const renderOptions = options || {};
 
@@ -620,6 +648,7 @@
     renderMovers,
     renderResultsTable,
     renderChartMetricSelect,
+    renderChartTypeSelect,
     renderHistory,
     impactPill,
     impactLabel,

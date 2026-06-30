@@ -278,20 +278,31 @@
               <h2 id="dashboardTitle">Dashboard</h2>
               <button class="help-button" type="button" aria-label="Подсказка: dashboard">
                 ?
-                <span class="help-tooltip" role="tooltip">Здесь показана сводка по расчету: ключевые числа, график, лучшая и худшая динамика. График можно переключать по показателям.</span>
+                <span class="help-tooltip" role="tooltip">Здесь показана сводка по расчету: ключевые числа, график, лучшая и худшая динамика. Можно переключать показатель и тип визуализации.</span>
               </button>
             </div>
           </div>
-          <label class="field field-inline">
-            <span>График</span>
-            <select id="chartMetricSelect" disabled></select>
-          </label>
+          <div class="chart-controls">
+            <label class="field field-inline">
+              <span>Показатель</span>
+              <select id="chartMetricSelect" disabled></select>
+            </label>
+            <label class="field field-inline">
+              <span>Тип графика</span>
+              <select id="chartTypeSelect" disabled>
+                <option value="bar-horizontal">Динамика по объектам</option>
+                <option value="bar-vertical">Вертикальные столбцы</option>
+                <option value="line-trend">Тренд по периодам</option>
+                <option value="doughnut-impact">Структура изменений</option>
+              </select>
+            </label>
+          </div>
         </div>
         <div id="summaryCards" class="summary-grid empty-state">Результаты появятся после расчета</div>
         <div class="chart-panel">
           <div class="chart-panel__header">
             <span>Динамика</span>
-            <strong>По выбранному показателю</strong>
+            <strong id="chartTitle">По выбранному показателю</strong>
           </div>
           <canvas id="deltaChart" height="120"></canvas>
         </div>

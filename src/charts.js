@@ -3,8 +3,14 @@
   const Normalizers = App.Normalizers;
   let deltaChart = null;
   let chartObserver = null;
+  const CHART_TYPES = [
+    { id: "bar-horizontal", label: "Динамика по объектам", title: "Динамика по объектам" },
+    { id: "bar-vertical", label: "Вертикальные столбцы", title: "Топ изменений" },
+    { id: "line-trend", label: "Тренд по периодам", title: "Тренд по периодам" },
+    { id: "doughnut-impact", label: "Структура изменений", title: "Структура изменений" },
+  ];
 
-  function renderDeltaChart(canvas, comparison, metric) {
+  function renderDeltaChart(canvas, comparison, metric, chartType) {
     if (!canvas || !global.Chart) {
       return;
     }
@@ -17,75 +23,59 @@
       return;
     }
 
+    const normalizedChartType = normalizeChartType(chartType);
+
+    if (normalizedChartType === "line-trend") {
+      renderTrendChart(canvas, comparison, metric);
+      return;
+    }
+
+    if (normalizedChartType === "doughnut-impact") {
+      renderImpactChart(canvas, comparison, metric);
+      return;
+    }
+
+    renderBarChart(canvas, comparison, metric, normalizedChartType);
+  }
+
+  function renderBarChart(canvas, comparison, metric, chartType) {
     const firstPeriod = comparison.periods[0];
     const lastPeriod = comparison.periods[comparison.periods.length - 1];
     const isPairwise = comparison.comparisonMode === "sequential" || comparison.comparisonMode === "manual";
-    const rows = comparison.rows
-      .flatMap(function (row) {
-        const result = row.metrics.find(function (item) {
-          return item.metricId === metric.id;
-        });
-
-        if (!result) {
-          return [];
-        }
-
-        if (isPairwise) {
-          return result.comparisons
-            .filter(function (item) {
-              return Number.isFinite(item.delta);
-            })
-            .map(function (item) {
-              return {
-                label: row.label + " · " + item.label,
-                unitLabel: row.label,
-                delta: item.delta,
-                impact: item.impact,
-                valueFormat: item.valueFormat || result.valueFormat || "number",
-                comparisonLabel: item.label,
-              };
-            });
-        }
-
-        if (!Number.isFinite(result.delta)) {
-          return [];
-        }
-
-        return [{
-          label: row.label,
-          unitLabel: row.label,
-          delta: result.delta,
-          impact: result.impact,
-          valueFormat: result.valueFormat || "number",
-          comparisonLabel: lastPeriod.label + " - " + firstPeriod.label,
-        }];
-      })
+    const isVertical = chartType === "bar-vertical";
+    const rows = buildDeltaRows(comparison, metric)
       .sort(function (left, right) {
         return Math.abs(right.delta) - Math.abs(left.delta);
       })
-      .slice(0, 15)
-      .reverse();
-    const targetData = rows.map(function (row) {
+      .slice(0, isVertical ? 10 : 15);
+    const displayRows = isVertical ? rows : rows.slice().reverse();
+
+    if (!displayRows.length) {
+      clearCanvas(canvas);
+      return;
+    }
+
+    const displayData = displayRows.map(function (row) {
       return row.delta;
     });
-    const chartValueFormat = getChartValueFormat(rows);
-    const waitForViewport = shouldWaitForViewport(canvas, targetData);
+    const chartValueFormat = getChartValueFormat(displayRows);
+    const waitForViewport = shouldWaitForViewport(canvas, displayData);
     const themeColors = getThemeColors();
 
     deltaChart = new global.Chart(canvas, {
       type: "bar",
       data: {
-        labels: rows.map(function (row) {
+        labels: displayRows.map(function (row) {
           return row.label;
         }),
         datasets: [
           {
             label: metric.label + " " + (isPairwise ? "динамика по выбранным парам" : lastPeriod.label + " - " + firstPeriod.label),
-            data: waitForViewport ? targetData.map(function () { return 0; }) : targetData,
+            data: waitForViewport ? displayData.map(function () { return 0; }) : displayData,
             backgroundColor: function (context) {
               const chart = context.chart;
               const chartArea = chart.chartArea;
-              const row = rows[context.dataIndex];
+              const row = displayRows[context.dataIndex];
 
               if (!chartArea || !row) {
                 return "rgba(20, 184, 166, 0.86)";
@@ -110,16 +100,16 @@
         ],
       },
       options: {
-        indexAxis: "y",
+        indexAxis: isVertical ? "x" : "y",
         interaction: {
-          mode: "barHitbox",
+          mode: isVertical ? "nearest" : "barHitbox",
           axis: "xy",
-          intersect: true,
+          intersect: !isVertical,
         },
         hover: {
-          mode: "barHitbox",
+          mode: isVertical ? "nearest" : "barHitbox",
           axis: "xy",
-          intersect: true,
+          intersect: !isVertical,
         },
         responsive: true,
         maintainAspectRatio: false,
@@ -136,7 +126,7 @@
             display: false,
           },
           tooltip: {
-            position: "cursorWithinBar",
+            position: isVertical ? "nearest" : "cursorWithinBar",
             backgroundColor: themeColors.tooltipBackground,
             borderColor: themeColors.tooltipBorder,
             borderWidth: 1,
@@ -158,11 +148,12 @@
             },
             callbacks: {
               title: function (items) {
-                const row = items[0] ? rows[items[0].dataIndex] : null;
+                const row = items[0] ? displayRows[items[0].dataIndex] : null;
                 return row ? row.unitLabel : "";
               },
               label: function (context) {
-                return "Изменение: " + Normalizers.formatMetricDelta(context.parsed.x, chartValueFormat, 2);
+                const parsedValue = isVertical ? context.parsed.y : context.parsed.x;
+                return "Изменение: " + Normalizers.formatMetricDelta(parsedValue, chartValueFormat, 2);
               },
             },
           },
@@ -179,13 +170,20 @@
               color: themeColors.axisMuted,
               padding: 8,
               callback: function (value) {
+                if (isVertical) {
+                  const label = this.getLabelForValue ? this.getLabelForValue(value) : value;
+                  return trimLabel(label, 14);
+                }
+
                 return Normalizers.formatMetricDelta(Number(value), chartValueFormat, 1);
               },
               font: {
                 family: "Inter, system-ui, sans-serif",
-                size: 12,
+                size: isVertical ? 10 : 12,
                 weight: "700",
               },
+              maxRotation: isVertical ? 0 : 50,
+              minRotation: 0,
             },
           },
           y: {
@@ -196,9 +194,16 @@
               display: false,
             },
             ticks: {
-              autoSkip: false,
+              autoSkip: isVertical,
               color: themeColors.axisText,
               padding: 10,
+              callback: function (value) {
+                if (isVertical) {
+                  return Normalizers.formatMetricDelta(Number(value), chartValueFormat, 1);
+                }
+
+                return this.getLabelForValue ? this.getLabelForValue(value) : value;
+              },
               font: {
                 family: "Inter, system-ui, sans-serif",
                 size: 12,
@@ -215,8 +220,384 @@
     });
 
     if (waitForViewport) {
-      animateWhenVisible(canvas, targetData);
+      animateWhenVisible(canvas, displayData);
     }
+  }
+
+  function renderTrendChart(canvas, comparison, metric) {
+    const trendRows = buildTrendRows(comparison, metric);
+
+    if (!trendRows.length) {
+      clearCanvas(canvas);
+      return;
+    }
+
+    const themeColors = getThemeColors();
+    const chartValueFormat = trendRows[0].valueFormat || "number";
+    const waitForViewport = shouldWaitForViewport(canvas, trendRows.map(function (row) { return row.value; }));
+
+    deltaChart = new global.Chart(canvas, {
+      type: "line",
+      data: {
+        labels: trendRows.map(function (row) {
+          return row.label;
+        }),
+        datasets: [
+          {
+            label: metric.label,
+            data: waitForViewport
+              ? trendRows.map(function () { return null; })
+              : trendRows.map(function (row) { return row.value; }),
+            borderColor: "#14B8A6",
+            backgroundColor: "rgba(20, 184, 166, 0.14)",
+            pointBackgroundColor: "#14B8A6",
+            pointBorderColor: "#FFFFFF",
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            borderWidth: 3,
+            fill: true,
+            tension: 0.36,
+            spanGaps: true,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: "nearest",
+          intersect: false,
+        },
+        layout: {
+          padding: {
+            top: 18,
+            right: 24,
+            bottom: 8,
+            left: 8,
+          },
+        },
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            backgroundColor: themeColors.tooltipBackground,
+            borderColor: themeColors.tooltipBorder,
+            borderWidth: 1,
+            cornerRadius: 14,
+            displayColors: false,
+            titleColor: themeColors.tooltipText,
+            bodyColor: themeColors.tooltipText,
+            padding: 12,
+            callbacks: {
+              label: function (context) {
+                return metric.label + ": " + Normalizers.formatMetricValue(context.parsed.y, chartValueFormat, 2);
+              },
+            },
+          },
+        },
+        scales: {
+          x: {
+            border: { display: false },
+            grid: { display: false },
+            ticks: {
+              color: themeColors.axisText,
+              font: {
+                family: "Inter, system-ui, sans-serif",
+                size: 12,
+                weight: "700",
+              },
+            },
+          },
+          y: {
+            border: { display: false },
+            grid: {
+              color: themeColors.grid,
+            },
+            ticks: {
+              color: themeColors.axisMuted,
+              callback: function (value) {
+                return Normalizers.formatMetricValue(Number(value), chartValueFormat, 1);
+              },
+              font: {
+                family: "Inter, system-ui, sans-serif",
+                size: 12,
+                weight: "700",
+              },
+            },
+          },
+        },
+        animation: {
+          duration: waitForViewport ? 0 : 460,
+          easing: "easeOutQuart",
+        },
+      },
+    });
+
+    if (waitForViewport) {
+      animateWhenVisible(canvas, trendRows.map(function (row) { return row.value; }));
+    }
+  }
+
+  function renderImpactChart(canvas, comparison, metric) {
+    const structure = buildImpactStructure(comparison, metric);
+    const total = structure.reduce(function (sum, item) {
+      return sum + item.value;
+    }, 0);
+
+    if (!total) {
+      clearCanvas(canvas);
+      return;
+    }
+
+    const themeColors = getThemeColors();
+
+    deltaChart = new global.Chart(canvas, {
+      type: "doughnut",
+      data: {
+        labels: structure.map(function (item) {
+          return item.label;
+        }),
+        datasets: [
+          {
+            data: structure.map(function (item) {
+              return item.value;
+            }),
+            backgroundColor: structure.map(function (item) {
+              return item.color;
+            }),
+            borderColor: themeColors.surface,
+            borderWidth: 5,
+            hoverOffset: 6,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "64%",
+        layout: {
+          padding: {
+            top: 16,
+            right: 24,
+            bottom: 16,
+            left: 24,
+          },
+        },
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              color: themeColors.axisText,
+              boxWidth: 10,
+              boxHeight: 10,
+              useBorderRadius: true,
+              borderRadius: 999,
+              font: {
+                family: "Inter, system-ui, sans-serif",
+                size: 12,
+                weight: "800",
+              },
+            },
+          },
+          tooltip: {
+            backgroundColor: themeColors.tooltipBackground,
+            borderColor: themeColors.tooltipBorder,
+            borderWidth: 1,
+            cornerRadius: 14,
+            displayColors: false,
+            titleColor: themeColors.tooltipText,
+            bodyColor: themeColors.tooltipText,
+            padding: 12,
+            callbacks: {
+              label: function (context) {
+                const value = Number(context.parsed) || 0;
+                const percent = total ? Math.round((value / total) * 100) : 0;
+                return value + " (" + percent + "%)";
+              },
+            },
+          },
+        },
+        animation: {
+          duration: 460,
+          easing: "easeOutQuart",
+        },
+      },
+    });
+  }
+
+  function buildDeltaRows(comparison, metric) {
+    const firstPeriod = comparison.periods[0];
+    const lastPeriod = comparison.periods[comparison.periods.length - 1];
+    const isPairwise = comparison.comparisonMode === "sequential" || comparison.comparisonMode === "manual";
+
+    return comparison.rows.flatMap(function (row) {
+      const result = findMetricResult(row, metric);
+
+      if (!result) {
+        return [];
+      }
+
+      if (isPairwise) {
+        return result.comparisons
+          .filter(function (item) {
+            return Number.isFinite(item.delta);
+          })
+          .map(function (item) {
+            return {
+              label: row.label + " · " + item.label,
+              unitLabel: row.label,
+              delta: item.delta,
+              impact: item.impact,
+              valueFormat: item.valueFormat || result.valueFormat || "number",
+              comparisonLabel: item.label,
+            };
+          });
+      }
+
+      if (!Number.isFinite(result.delta)) {
+        return [];
+      }
+
+      return [{
+        label: row.label,
+        unitLabel: row.label,
+        delta: result.delta,
+        impact: result.impact,
+        valueFormat: result.valueFormat || "number",
+        comparisonLabel: lastPeriod.label + " - " + firstPeriod.label,
+      }];
+    });
+  }
+
+  function buildTrendRows(comparison, metric) {
+    return comparison.periods
+      .map(function (period) {
+        const values = comparison.rows
+          .map(function (row) {
+            const result = findMetricResult(row, metric);
+            const periodValue = result && result.periodValues
+              ? result.periodValues.find(function (item) {
+                  return item.periodId === period.id;
+                })
+              : null;
+
+            return periodValue && Number.isFinite(periodValue.value) ? periodValue.value : null;
+          })
+          .filter(function (value) {
+            return Number.isFinite(value);
+          });
+        const valueFormat = getMetricValueFormat(comparison, metric);
+
+        if (!values.length) {
+          return null;
+        }
+
+        return {
+          label: period.label,
+          value: aggregateTrendValues(values, metric, valueFormat),
+          valueFormat: valueFormat,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function aggregateTrendValues(values, metric, valueFormat) {
+    const method = metric && metric.aggregation ? metric.aggregation : "auto";
+
+    if (method === "avg" || method === "first" || valueFormat === "percent") {
+      return values.reduce(sumValues, 0) / values.length;
+    }
+
+    if (method === "min") {
+      return Math.min.apply(null, values);
+    }
+
+    if (method === "max") {
+      return Math.max.apply(null, values);
+    }
+
+    return values.reduce(sumValues, 0);
+  }
+
+  function buildImpactStructure(comparison, metric) {
+    const rows = buildDeltaRows(comparison, metric);
+    const improved = rows.filter(function (row) {
+      return row.impact === "good";
+    }).length;
+    const declined = rows.filter(function (row) {
+      return row.impact === "bad";
+    }).length;
+    const unchanged = rows.filter(function (row) {
+      return row.impact === "neutral";
+    }).length;
+
+    return [
+      { label: "Улучшения", value: improved, color: "#16A34A" },
+      { label: "Ухудшения", value: declined, color: "#E11D48" },
+      { label: "Без изменений", value: unchanged, color: "#94A3B8" },
+    ].filter(function (item) {
+      return item.value > 0;
+    });
+  }
+
+  function findMetricResult(row, metric) {
+    if (!row || !metric) {
+      return null;
+    }
+
+    return row.metrics.find(function (item) {
+      return item.metricId === metric.id;
+    }) || null;
+  }
+
+  function getMetricValueFormat(comparison, metric) {
+    const resultRow = comparison.rows.find(function (row) {
+      return findMetricResult(row, metric);
+    });
+    const result = resultRow ? findMetricResult(resultRow, metric) : null;
+
+    return result ? result.valueFormat || "number" : "number";
+  }
+
+  function sumValues(sum, value) {
+    return sum + value;
+  }
+
+  function normalizeChartType(chartType) {
+    return CHART_TYPES.some(function (type) {
+      return type.id === chartType;
+    })
+      ? chartType
+      : "bar-horizontal";
+  }
+
+  function getChartTypes() {
+    return CHART_TYPES.map(function (type) {
+      return {
+        id: type.id,
+        label: type.label,
+      };
+    });
+  }
+
+  function getChartTitle(chartType) {
+    const type = CHART_TYPES.find(function (item) {
+      return item.id === chartType;
+    });
+
+    return type ? type.title : CHART_TYPES[0].title;
+  }
+
+  function trimLabel(value, maxLength) {
+    const text = String(value === null || value === undefined ? "" : value);
+
+    if (text.length <= maxLength) {
+      return text;
+    }
+
+    return text.slice(0, Math.max(1, maxLength - 1)) + "…";
   }
 
   function createHorizontalGradient(context, chartArea, fromColor, toColor) {
@@ -467,6 +848,8 @@
     return {
       axisText: secondary,
       axisMuted: neutral,
+      grid: isDark ? "rgba(148, 163, 184, 0.16)" : "rgba(226, 232, 240, 0.74)",
+      surface: isDark ? "#171D26" : "#FFFFFF",
       tooltipBackground: isDark ? "#F8FAFC" : text,
       tooltipBorder: isDark ? "rgba(15, 23, 42, 0.12)" : "rgba(255, 255, 255, 0.08)",
       tooltipText: isDark ? "#18212F" : "#FFFFFF",
@@ -475,5 +858,7 @@
 
   App.Charts = {
     renderDeltaChart,
+    getChartTypes,
+    getChartTitle,
   };
 })(window);

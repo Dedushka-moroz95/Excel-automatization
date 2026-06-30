@@ -53,6 +53,8 @@
     dom.historySearchInput = document.getElementById("historySearchInput");
     dom.summaryCards = document.getElementById("summaryCards");
     dom.chartMetricSelect = document.getElementById("chartMetricSelect");
+    dom.chartTypeSelect = document.getElementById("chartTypeSelect");
+    dom.chartTitle = document.getElementById("chartTitle");
     dom.deltaChart = document.getElementById("deltaChart");
     dom.moversPanel = document.getElementById("moversPanel");
     dom.resultsTable = document.getElementById("resultsTable");
@@ -169,6 +171,10 @@
 
     dom.chartMetricSelect.addEventListener("change", function () {
       state.selectedChartMetricId = dom.chartMetricSelect.value;
+      renderAnalysis();
+    });
+    dom.chartTypeSelect.addEventListener("change", function () {
+      state.selectedChartType = dom.chartTypeSelect.value || "bar-horizontal";
       renderAnalysis();
     });
   }
@@ -1344,6 +1350,7 @@
 
     state.analytics = App.Analytics.buildAnalytics(state.comparison, state.mapping.metrics);
     state.selectedChartMetricId = state.mapping.metrics[0].id;
+    state.selectedChartType = state.selectedChartType || "bar-horizontal";
     state.restoredHistoryMeta = null;
     state.restoredHistorySettings = null;
     hasUnsavedAnalysis = true;
@@ -1357,6 +1364,8 @@
     App.UI.renderSummary(dom.summaryCards, view.analytics);
     App.UI.renderChartMetricSelect(dom.chartMetricSelect, state.mapping.metrics, state.selectedChartMetricId);
     dom.chartMetricSelect.disabled = !state.comparison || !state.mapping.metrics.length;
+    App.UI.renderChartTypeSelect(dom.chartTypeSelect, state.selectedChartType);
+    dom.chartTypeSelect.disabled = !state.comparison || !state.mapping.metrics.length;
     App.UI.renderMovers(dom.moversPanel, view.analytics);
     App.UI.renderResultsTable(dom.resultsTable, view.comparison, state.mapping.metrics);
     renderChart(view.comparison);
@@ -1482,6 +1491,7 @@
         periodSourceMode: state.periodSourceMode || "multiFile",
         comparisonMode: state.comparisonMode,
         selectedChartMetricId: state.selectedChartMetricId,
+        selectedChartType: state.selectedChartType || "bar-horizontal",
         manualComparisonPairs: cloneJson(state.manualComparisonPairs || []),
         singleFile:
           state.periodSourceMode === "singleFile"
@@ -1642,6 +1652,7 @@
     state.selectedChartMetricId =
       record.settings.selectedChartMetricId ||
       (state.mapping.metrics[0] ? state.mapping.metrics[0].id : "");
+    state.selectedChartType = record.settings.selectedChartType || "bar-horizontal";
     filtersController.resetState();
     state.periods = restorePeriods(record);
     state.singleFile = App.createSingleFileSource ? App.createSingleFileSource() : null;
@@ -1853,7 +1864,10 @@
 
   function renderChart(comparison) {
     const metric = findMetric(state.selectedChartMetricId) || state.mapping.metrics[0];
-    App.Charts.renderDeltaChart(dom.deltaChart, comparison || state.comparison, metric);
+    App.Charts.renderDeltaChart(dom.deltaChart, comparison || state.comparison, metric, state.selectedChartType);
+    if (dom.chartTitle && App.Charts.getChartTitle) {
+      dom.chartTitle.textContent = App.Charts.getChartTitle(state.selectedChartType);
+    }
   }
 
   function syncMetricLabels() {

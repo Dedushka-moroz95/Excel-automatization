@@ -1223,6 +1223,18 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
   text-align: right;
 }
 
+.chart-controls {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: min(100%, 560px);
+}
+
+.chart-controls .field-inline {
+  grid-template-columns: auto minmax(170px, 230px);
+}
+
 .upload-grid,
 .preview-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -3471,6 +3483,16 @@ html.theme-dark .metric-row--invalid .metric-name strong {
   .field-inline {
     grid-template-columns: 1fr;
     width: 100%;
+  }
+
+  .chart-controls {
+    justify-content: stretch;
+    width: 100%;
+  }
+
+  .chart-controls .field-inline {
+    grid-template-columns: 1fr;
+    flex: 1 1 180px;
   }
 
   .period-toolbar,

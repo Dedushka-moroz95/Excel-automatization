@@ -14,6 +14,7 @@
       comparison: null,
       analytics: null,
       selectedChartMetricId: "",
+      selectedChartType: "bar-horizontal",
       globalFilters: createGlobalFilters(),
       messages: [],
     };
