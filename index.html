@@ -137,7 +137,15 @@
 
         <div class="sidebar-control-stack" aria-label="Управление анализом">
           <section class="sidebar-control-card sidebar-upload-card" aria-label="Файлы периодов">
-            <span class="sidebar-panel__label">Файлы периодов</span>
+            <div class="sidebar-panel-heading">
+              <span class="sidebar-panel__label">Файлы периодов</span>
+              <button class="sidebar-help-button" type="button" aria-label="Подсказка: файлы периодов">
+                ?
+                <span class="sidebar-help-tooltip" role="tooltip">
+                  Выберите режим загрузки: несколько файлов или один файл с колонкой периода. Затем загрузите исходные Excel, CSV или TSV-выгрузки.
+                </span>
+              </button>
+            </div>
             <label class="field sidebar-field">
               <span>Источник</span>
               <select id="periodSourceModeSelect">
@@ -149,7 +157,15 @@
           </section>
 
           <section class="sidebar-control-card" aria-label="Настройки сравнения">
-            <span class="sidebar-panel__label">Сравнение</span>
+            <div class="sidebar-panel-heading">
+              <span class="sidebar-panel__label">Сравнение</span>
+              <button class="sidebar-help-button" type="button" aria-label="Подсказка: сравнение">
+                ?
+                <span class="sidebar-help-tooltip" role="tooltip">
+                  Выберите, как сравнивать периоды: первый с последним, каждый период с предыдущим или вручную заданные пары.
+                </span>
+              </button>
+            </div>
             <label class="field sidebar-field">
               <span>Формат</span>
               <select id="comparisonModeSelect">
@@ -163,7 +179,15 @@
           </section>
 
           <section id="mapperSection" class="sidebar-control-card sidebar-mapping-card" aria-label="Сопоставление колонок">
-            <span class="sidebar-panel__label">Сопоставление</span>
+            <div class="sidebar-panel-heading">
+              <span class="sidebar-panel__label">Сопоставление</span>
+              <button class="sidebar-help-button" type="button" aria-label="Подсказка: сопоставление колонок">
+                ?
+                <span class="sidebar-help-tooltip" role="tooltip">
+                  Укажите колонку с объектом сравнения: сотрудником, логином, командой или подразделением. Затем добавьте показатели для анализа.
+                </span>
+              </button>
+            </div>
             <div id="mapperControls" class="mapper-controls">
               <div class="empty-state">Загрузите периоды для выбора объекта</div>
             </div>
@@ -180,7 +204,15 @@
           </section>
 
           <section class="sidebar-control-card" aria-label="Расчет и проверки">
-            <span class="sidebar-panel__label">Расчет</span>
+            <div class="sidebar-panel-heading">
+              <span class="sidebar-panel__label">Расчет</span>
+              <button class="sidebar-help-button" type="button" aria-label="Подсказка: расчет">
+                ?
+                <span class="sidebar-help-tooltip" role="tooltip">
+                  Запустите сравнение после загрузки файлов и выбора колонок. Ниже появятся предупреждения по пропускам, дублям и качеству данных.
+                </span>
+              </button>
+            </div>
             <button id="analyzeButton" class="button button-primary" type="button" disabled>
               Сравнить
             </button>
@@ -190,7 +222,15 @@
           </section>
 
           <section class="sidebar-control-card sidebar-filter-card" aria-label="Глобальные фильтры">
-            <span class="sidebar-panel__label">Фильтры</span>
+            <div class="sidebar-panel-heading">
+              <span class="sidebar-panel__label">Фильтры</span>
+              <button class="sidebar-help-button" type="button" aria-label="Подсказка: фильтры">
+                ?
+                <span class="sidebar-help-tooltip" role="tooltip">
+                  Ограничьте результаты после расчета: оставьте только улучшения, ухудшения, нужный диапазон динамики или конкретный объект.
+                </span>
+              </button>
+            </div>
             <label class="field sidebar-field">
               <span>Динамика графика</span>
               <select id="globalImpactFilter" disabled>
@@ -228,7 +268,15 @@
           </section>
 
           <section class="sidebar-control-card sidebar-report-card" aria-label="Действия с отчетом">
-            <span class="sidebar-panel__label">Отчет</span>
+            <div class="sidebar-panel-heading">
+              <span class="sidebar-panel__label">Отчет</span>
+              <button class="sidebar-help-button" type="button" aria-label="Подсказка: отчет">
+                ?
+                <span class="sidebar-help-tooltip" role="tooltip">
+                  Скачайте результат в CSV или Excel. Кнопка с дискетой сохраняет анализ в историю браузера без исходных файлов.
+                </span>
+              </button>
+            </div>
             <div class="results-actions sidebar-actions sidebar-report-actions">
               <button id="exportCsvButton" class="button button-secondary" type="button" disabled>
                 CSV

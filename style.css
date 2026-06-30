@@ -472,6 +472,7 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
 }
 
 .sidebar-control-card {
+  position: relative;
   display: grid;
   gap: 10px;
   min-width: 0;
@@ -955,6 +956,96 @@ body.is-sidebar-resizing .sidebar-resize-handle::before {
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 850;
+}
+
+.sidebar-panel-heading {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+
+.sidebar-panel-heading .sidebar-panel__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-help-button {
+  position: relative;
+  z-index: 20;
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid rgba(15, 118, 110, 0.22);
+  border-radius: 50%;
+  background: rgba(204, 251, 241, 0.58);
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 950;
+  line-height: 1;
+  cursor: help;
+}
+
+.sidebar-help-button:hover,
+.sidebar-help-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(15, 118, 110, 0.34);
+  background: var(--primary-soft);
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.1);
+  outline: none;
+}
+
+.sidebar-help-tooltip {
+  position: absolute;
+  top: calc(100% + 9px);
+  right: 0;
+  z-index: 80;
+  width: min(250px, calc(var(--sidebar-width) - 56px));
+  max-width: calc(100vw - 40px);
+  padding: 10px 12px;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 16px 34px rgba(24, 33, 47, 0.13);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  text-align: left;
+  transform: translateY(-4px);
+  white-space: normal;
+  transition:
+    opacity 180ms var(--ease-premium),
+    transform 180ms var(--ease-premium);
+}
+
+.sidebar-help-tooltip::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 8px;
+  width: 10px;
+  height: 10px;
+  border-left: 1px solid rgba(226, 232, 240, 0.95);
+  border-top: 1px solid rgba(226, 232, 240, 0.95);
+  background: var(--card);
+  transform: rotate(45deg);
+}
+
+.sidebar-help-button:hover .sidebar-help-tooltip,
+.sidebar-help-button:focus .sidebar-help-tooltip,
+.sidebar-help-button:focus-visible .sidebar-help-tooltip {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .app-header {
@@ -2802,7 +2893,8 @@ html.theme-dark .mover-card,
 html.theme-dark .history-card,
 html.theme-dark .modal-card,
 html.theme-dark .help-tooltip,
-html.theme-dark .sidebar-info-tooltip {
+html.theme-dark .sidebar-info-tooltip,
+html.theme-dark .sidebar-help-tooltip {
   border-color: var(--border);
   background: rgba(23, 29, 38, 0.88);
   color: var(--text);
@@ -2818,7 +2910,8 @@ html.theme-dark .brand-mark {
 }
 
 html.theme-dark .help-button,
-html.theme-dark .sidebar-info-button {
+html.theme-dark .sidebar-info-button,
+html.theme-dark .sidebar-help-button {
   border-color: rgba(45, 212, 191, 0.28);
   background: rgba(20, 184, 166, 0.14);
   color: var(--primary-bright);
@@ -2827,20 +2920,24 @@ html.theme-dark .sidebar-info-button {
 html.theme-dark .help-button:hover,
 html.theme-dark .help-button:focus-visible,
 html.theme-dark .sidebar-info-button:hover,
-html.theme-dark .sidebar-info-button:focus-visible {
+html.theme-dark .sidebar-info-button:focus-visible,
+html.theme-dark .sidebar-help-button:hover,
+html.theme-dark .sidebar-help-button:focus-visible {
   border-color: rgba(45, 212, 191, 0.42);
   background: rgba(20, 184, 166, 0.22);
   box-shadow: 0 10px 24px rgba(20, 184, 166, 0.12);
   color: #5eead4;
 }
 
-html.theme-dark .help-tooltip {
+html.theme-dark .help-tooltip,
+html.theme-dark .sidebar-help-tooltip {
   border-color: var(--border);
   background: var(--card);
   color: var(--text-secondary);
 }
 
-html.theme-dark .help-tooltip::before {
+html.theme-dark .help-tooltip::before,
+html.theme-dark .sidebar-help-tooltip::before {
   border-color: var(--border);
   background: var(--card);
 }
