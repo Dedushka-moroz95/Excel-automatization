@@ -2232,6 +2232,7 @@
     try {
       await App.Exporters.exportExcel(state.comparison, state.mapping.metrics, state.analytics, {
         chartMetric: findMetric(state.selectedChartMetricId) || state.mapping.metrics[0],
+        chartType: state.selectedChartType || "bar-horizontal",
       });
     } catch (error) {
       state.messages.push({

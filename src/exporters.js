@@ -12,6 +12,12 @@
   const CHART_IMAGE_WIDTH = 980;
   const CHART_IMAGE_HEIGHT = 500;
   const CHART_BLOCK_ROWS = 32;
+  const EXPORT_CHART_TYPES = {
+    "bar-horizontal": "Динамика по объектам",
+    "bar-vertical": "Вертикальные столбцы",
+    "line-trend": "Тренд по периодам",
+    "doughnut-impact": "Структура изменений",
+  };
   const EXCEL_FORMATS = {
     number: "#,##0.00",
     signedNumber: "+#,##0.00;-#,##0.00;0.00",
@@ -31,19 +37,21 @@
     downloadBlob("\ufeff" + csv, "comparison-report.csv", "text/csv;charset=utf-8");
   }
 
-  async function exportExcel(comparison, metrics, analytics) {
+  async function exportExcel(comparison, metrics, analytics, options) {
     if (!global.ExcelJS) {
       throw new Error("Библиотека ExcelJS не загружена");
     }
 
+    const exportOptions = options || {};
+    const chartType = normalizeExportChartType(exportOptions.chartType);
     const workbook = new global.ExcelJS.Workbook();
     workbook.creator = "Metricum";
     workbook.created = new Date();
 
-    fillDashboardSheet(workbook.addWorksheet(SHEET_NAMES.dashboard), analytics, metrics);
+    fillDashboardSheet(workbook.addWorksheet(SHEET_NAMES.dashboard), analytics, metrics, chartType);
     fillSummarySheet(workbook.addWorksheet(SHEET_NAMES.summary), analytics);
     fillComparisonSheet(workbook.addWorksheet(SHEET_NAMES.comparison), comparison, metrics);
-    fillChartsSheet(workbook, workbook.addWorksheet(SHEET_NAMES.charts), comparison, metrics);
+    fillChartsSheet(workbook, workbook.addWorksheet(SHEET_NAMES.charts), comparison, metrics, chartType);
     fillMissingSheet(workbook.addWorksheet(SHEET_NAMES.missing), comparison);
     fillDuplicateSheet(workbook.addWorksheet(SHEET_NAMES.duplicates), comparison);
 
@@ -61,7 +69,7 @@
     downloadBlob(buffer, "comparison-report.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
   }
 
-  function fillDashboardSheet(sheet, analytics, metrics) {
+  function fillDashboardSheet(sheet, analytics, metrics, chartType) {
     sheet.columns = [
       { key: "a", width: 24 },
       { key: "b", width: 18 },
@@ -78,7 +86,14 @@
     sheet.getRow(1).height = 30;
 
     sheet.mergeCells("A2:F2");
-    sheet.getCell("A2").value = "Графики динамики по " + metrics.length + " показателям находятся на листе \"" + SHEET_NAMES.charts + "\".";
+    sheet.getCell("A2").value =
+      "Графики по " +
+      metrics.length +
+      " показателям находятся на листе \"" +
+      SHEET_NAMES.charts +
+      "\". Тип визуализации: " +
+      getExportChartTypeLabel(chartType) +
+      ".";
     sheet.getCell("A2").font = { bold: true, size: 12, color: { argb: "FF667085" } };
 
     sheet.addRow([]);
@@ -313,7 +328,7 @@
     sheet.getColumn(1).width = 28;
   }
 
-  function fillChartsSheet(workbook, sheet, comparison, metrics) {
+  function fillChartsSheet(workbook, sheet, comparison, metrics, chartType) {
     sheet.columns = [
       { key: "a", width: 24 },
       { key: "b", width: 18 },
@@ -332,14 +347,15 @@
 
     metrics.forEach(function (metric, index) {
       const titleRow = index === 0 ? 1 : sheet.rowCount + 3;
-      const chartDataUrl = buildDashboardChartImage(comparison, metric);
+      const chartDataUrl = buildDashboardChartImage(comparison, metric, chartType);
 
       while (sheet.rowCount < titleRow - 1) {
         sheet.addRow([]);
       }
 
       sheet.mergeCells("A" + titleRow + ":H" + titleRow);
-      sheet.getCell("A" + titleRow).value = "График динамики: " + (metric.label || "Показатель");
+      sheet.getCell("A" + titleRow).value =
+        getExportChartTypeLabel(chartType) + ": " + (metric.label || "Показатель");
       sheet.getCell("A" + titleRow).font = { bold: true, size: 18, color: { argb: "FF18212F" } };
       sheet.getCell("A" + titleRow).alignment = { vertical: "middle" };
       sheet.getRow(titleRow).height = 28;
@@ -390,14 +406,8 @@
     styleHeaderRow(sheet);
   }
 
-  function buildDashboardChartImage(comparison, metric) {
+  function buildDashboardChartImage(comparison, metric, chartType) {
     if (!metric || !global.document) {
-      return "";
-    }
-
-    const rows = buildChartRows(comparison, metric);
-
-    if (!rows.length) {
       return "";
     }
 
@@ -416,12 +426,21 @@
     }
 
     context.scale(scale, scale);
-    drawChart(context, width, height, rows, metric);
+    drawChart(context, width, height, comparison, metric, normalizeExportChartType(chartType));
 
     return canvas.toDataURL("image/png");
   }
 
   function buildChartRows(comparison, metric) {
+    return buildChartDeltaRows(comparison, metric)
+      .sort(function (left, right) {
+        return Math.abs(right.delta) - Math.abs(left.delta);
+      })
+      .slice(0, 15)
+      .reverse();
+  }
+
+  function buildChartDeltaRows(comparison, metric) {
     const isPairwise = comparison.comparisonMode === "sequential" || comparison.comparisonMode === "manual";
 
     return comparison.rows
@@ -459,15 +478,36 @@
           impact: result.impact,
           valueFormat: result.valueFormat || "number",
         }];
-      })
-      .sort(function (left, right) {
-        return Math.abs(right.delta) - Math.abs(left.delta);
-      })
-      .slice(0, 15)
-      .reverse();
+      });
   }
 
-  function drawChart(context, width, height, rows, metric) {
+  function drawChart(context, width, height, comparison, metric, chartType) {
+    if (chartType === "bar-vertical") {
+      drawVerticalBarChart(context, width, height, comparison, metric);
+      return;
+    }
+
+    if (chartType === "line-trend") {
+      drawLineTrendChart(context, width, height, comparison, metric);
+      return;
+    }
+
+    if (chartType === "doughnut-impact") {
+      drawDoughnutChart(context, width, height, comparison, metric);
+      return;
+    }
+
+    drawHorizontalBarChart(context, width, height, comparison, metric);
+  }
+
+  function drawHorizontalBarChart(context, width, height, comparison, metric) {
+    const rows = buildChartRows(comparison, metric);
+
+    if (!rows.length) {
+      drawEmptyChart(context, width, height, metric, "Нет данных для построения графика");
+      return;
+    }
+
     const padding = {
       top: 86,
       right: 170,
@@ -495,13 +535,7 @@
     context.fillStyle = "#ffffff";
     context.fillRect(0, 0, width, height);
 
-    context.fillStyle = "#18212F";
-    context.font = "700 28px Inter, Segoe UI, Arial, sans-serif";
-    context.fillText("Динамика показателя", 32, 42);
-
-    context.fillStyle = "#667085";
-    context.font = "600 16px Inter, Segoe UI, Arial, sans-serif";
-    context.fillText(metric.label || "Показатель", 32, 68);
+    drawChartHeader(context, "Динамика по объектам", metric.label || "Показатель");
 
     drawRoundedRect(context, padding.left, padding.top - 20, chartWidth, chartHeight + 40, 22, "#F8FAFC");
 
@@ -544,6 +578,362 @@
     context.font = "600 12px Inter, Segoe UI, Arial, sans-serif";
     context.textAlign = "left";
     context.fillText("Топ изменений по модулю значения. График сформирован локально в браузере.", 32, height - 26);
+  }
+
+  function drawVerticalBarChart(context, width, height, comparison, metric) {
+    const rows = buildChartRows(comparison, metric)
+      .slice()
+      .reverse()
+      .slice(0, 10);
+
+    if (!rows.length) {
+      drawEmptyChart(context, width, height, metric, "Нет данных для построения графика");
+      return;
+    }
+
+    const padding = {
+      top: 96,
+      right: 56,
+      bottom: 112,
+      left: 88,
+    };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+    const maxAbs = Math.max.apply(null, rows.map(function (row) {
+      return Math.abs(row.delta);
+    })) || 1;
+    const minValue = -maxAbs;
+    const maxValue = maxAbs;
+    const range = maxValue - minValue || 1;
+    const zeroY = padding.top + chartHeight - ((0 - minValue) / range) * chartHeight;
+    const barGap = 18;
+    const barWidth = Math.max(26, Math.min(64, (chartWidth - barGap * (rows.length - 1)) / rows.length));
+    const valueFormat = getChartValueFormat(rows);
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    drawChartHeader(context, "Вертикальные столбцы", metric.label || "Показатель");
+    drawRoundedRect(context, padding.left - 28, padding.top - 22, chartWidth + 56, chartHeight + 52, 22, "#F8FAFC");
+
+    context.strokeStyle = "#CBD5E1";
+    context.lineWidth = 1;
+    context.beginPath();
+    context.moveTo(padding.left - 14, zeroY);
+    context.lineTo(padding.left + chartWidth + 14, zeroY);
+    context.stroke();
+
+    rows.forEach(function (row, index) {
+      const x = padding.left + index * (barWidth + barGap);
+      const valueY = padding.top + chartHeight - ((row.delta - minValue) / range) * chartHeight;
+      const y = Math.min(zeroY, valueY);
+      const heightValue = Math.max(4, Math.abs(valueY - zeroY));
+
+      drawRoundedRect(context, x, y, barWidth, heightValue, 8, getExportBarColor(row.impact));
+
+      context.fillStyle = row.impact === "bad" ? "#E11D48" : row.impact === "neutral" ? "#667085" : "#18212F";
+      context.font = "800 12px Inter, Segoe UI, Arial, sans-serif";
+      context.textAlign = "center";
+      context.textBaseline = row.delta < 0 ? "top" : "bottom";
+      context.fillText(
+        Normalizers.formatMetricDelta(row.delta, valueFormat, 1),
+        x + barWidth / 2,
+        row.delta < 0 ? y + heightValue + 8 : y - 8
+      );
+
+      context.save();
+      context.translate(x + barWidth / 2, padding.top + chartHeight + 46);
+      context.rotate(-Math.PI / 6);
+      context.fillStyle = "#667085";
+      context.font = "700 11px Inter, Segoe UI, Arial, sans-serif";
+      context.textAlign = "right";
+      context.textBaseline = "middle";
+      context.fillText(trimText(context, row.label, 120), 0, 0);
+      context.restore();
+    });
+
+    drawChartFooter(context, width, "Топ изменений по модулю значения. График сформирован локально в браузере.");
+  }
+
+  function drawLineTrendChart(context, width, height, comparison, metric) {
+    const rows = buildTrendRows(comparison, metric);
+
+    if (rows.length < 2) {
+      drawEmptyChart(context, width, height, metric, "Для тренда нужно минимум два периода с числовыми значениями");
+      return;
+    }
+
+    const padding = {
+      top: 96,
+      right: 72,
+      bottom: 82,
+      left: 96,
+    };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+    const values = rows.map(function (row) {
+      return row.value;
+    });
+    const minValue = Math.min.apply(null, values);
+    const maxValue = Math.max.apply(null, values);
+    const range = maxValue - minValue || Math.max(Math.abs(maxValue), 1);
+    const valueFormat = rows[0].valueFormat || "number";
+    const points = rows.map(function (row, index) {
+      const x = padding.left + (rows.length === 1 ? 0 : (index / (rows.length - 1)) * chartWidth);
+      const y = padding.top + chartHeight - ((row.value - minValue) / range) * chartHeight;
+      return Object.assign({}, row, { x: x, y: y });
+    });
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    drawChartHeader(context, "Тренд по периодам", metric.label || "Показатель");
+    drawRoundedRect(context, padding.left - 28, padding.top - 22, chartWidth + 56, chartHeight + 48, 22, "#F8FAFC");
+
+    context.strokeStyle = "#E2E8F0";
+    context.lineWidth = 1;
+    [0, 0.25, 0.5, 0.75, 1].forEach(function (ratio) {
+      const y = padding.top + ratio * chartHeight;
+      context.beginPath();
+      context.moveTo(padding.left, y);
+      context.lineTo(padding.left + chartWidth, y);
+      context.stroke();
+    });
+
+    context.beginPath();
+    points.forEach(function (point, index) {
+      if (index === 0) {
+        context.moveTo(point.x, point.y);
+        return;
+      }
+
+      context.lineTo(point.x, point.y);
+    });
+    context.strokeStyle = "#14B8A6";
+    context.lineWidth = 4;
+    context.lineJoin = "round";
+    context.lineCap = "round";
+    context.stroke();
+
+    points.forEach(function (point) {
+      context.beginPath();
+      context.fillStyle = "#14B8A6";
+      context.arc(point.x, point.y, 6, 0, Math.PI * 2);
+      context.fill();
+
+      context.fillStyle = "#18212F";
+      context.font = "800 12px Inter, Segoe UI, Arial, sans-serif";
+      context.textAlign = "center";
+      context.textBaseline = "bottom";
+      context.fillText(Normalizers.formatMetricValue(point.value, valueFormat, 1), point.x, point.y - 10);
+
+      context.fillStyle = "#667085";
+      context.font = "700 12px Inter, Segoe UI, Arial, sans-serif";
+      context.textBaseline = "top";
+      context.fillText(trimText(context, point.label, 120), point.x, padding.top + chartHeight + 18);
+    });
+
+    drawChartFooter(context, width, "Значение по периоду агрегировано по всем объектам выбранного показателя.");
+  }
+
+  function drawDoughnutChart(context, width, height, comparison, metric) {
+    const structure = buildImpactStructure(comparison, metric);
+    const total = structure.reduce(function (sum, item) {
+      return sum + item.value;
+    }, 0);
+
+    if (!total) {
+      drawEmptyChart(context, width, height, metric, "Нет изменений для структуры");
+      return;
+    }
+
+    const centerX = 430;
+    const centerY = 330;
+    const radius = 150;
+    const innerRadius = 88;
+    let angle = -Math.PI / 2;
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    drawChartHeader(context, "Структура изменений", metric.label || "Показатель");
+
+    structure.forEach(function (item) {
+      const sliceAngle = (item.value / total) * Math.PI * 2;
+      context.beginPath();
+      context.moveTo(centerX, centerY);
+      context.arc(centerX, centerY, radius, angle, angle + sliceAngle);
+      context.closePath();
+      context.fillStyle = item.color;
+      context.fill();
+      angle += sliceAngle;
+    });
+
+    context.beginPath();
+    context.arc(centerX, centerY, innerRadius, 0, Math.PI * 2);
+    context.fillStyle = "#FFFFFF";
+    context.fill();
+
+    context.fillStyle = "#18212F";
+    context.font = "900 42px Inter, Segoe UI, Arial, sans-serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(String(total), centerX, centerY - 8);
+    context.fillStyle = "#667085";
+    context.font = "800 14px Inter, Segoe UI, Arial, sans-serif";
+    context.fillText("изменений", centerX, centerY + 30);
+
+    structure.forEach(function (item, index) {
+      const y = 230 + index * 70;
+      const percent = total ? Math.round((item.value / total) * 100) : 0;
+
+      drawRoundedRect(context, 690, y - 14, 18, 18, 6, item.color);
+      context.fillStyle = "#18212F";
+      context.font = "850 18px Inter, Segoe UI, Arial, sans-serif";
+      context.textAlign = "left";
+      context.textBaseline = "middle";
+      context.fillText(item.label, 724, y - 5);
+
+      context.fillStyle = "#667085";
+      context.font = "750 14px Inter, Segoe UI, Arial, sans-serif";
+      context.fillText(item.value + " · " + percent + "%", 724, y + 19);
+    });
+
+    drawChartFooter(context, width, "Структура рассчитана по доступным сравнениям выбранного показателя.");
+  }
+
+  function buildTrendRows(comparison, metric) {
+    return comparison.periods
+      .map(function (period) {
+        const values = comparison.rows
+          .map(function (row) {
+            const result = findMetricResult(row, metric);
+            const periodValue = result && result.periodValues
+              ? result.periodValues.find(function (item) {
+                  return item.periodId === period.id;
+                })
+              : null;
+
+            return periodValue && Number.isFinite(periodValue.value) ? periodValue.value : null;
+          })
+          .filter(function (value) {
+            return Number.isFinite(value);
+          });
+        const valueFormat = getChartMetricValueFormat(comparison, metric);
+
+        if (!values.length) {
+          return null;
+        }
+
+        return {
+          label: period.label,
+          value: aggregateTrendValues(values, metric, valueFormat),
+          valueFormat: valueFormat,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  function aggregateTrendValues(values, metric, valueFormat) {
+    const method = metric && metric.aggregation ? metric.aggregation : "auto";
+
+    if (method === "avg" || method === "first" || valueFormat === "percent") {
+      return values.reduce(sumValues, 0) / values.length;
+    }
+
+    if (method === "min") {
+      return Math.min.apply(null, values);
+    }
+
+    if (method === "max") {
+      return Math.max.apply(null, values);
+    }
+
+    return values.reduce(sumValues, 0);
+  }
+
+  function buildImpactStructure(comparison, metric) {
+    const rows = buildChartDeltaRows(comparison, metric);
+    const improved = rows.filter(function (row) {
+      return row.impact === "good";
+    }).length;
+    const declined = rows.filter(function (row) {
+      return row.impact === "bad";
+    }).length;
+    const unchanged = rows.filter(function (row) {
+      return row.impact === "neutral";
+    }).length;
+
+    return [
+      { label: "Улучшения", value: improved, color: "#16A34A" },
+      { label: "Ухудшения", value: declined, color: "#E11D48" },
+      { label: "Без изменений", value: unchanged, color: "#94A3B8" },
+    ].filter(function (item) {
+      return item.value > 0;
+    });
+  }
+
+  function findMetricResult(row, metric) {
+    if (!row || !metric) {
+      return null;
+    }
+
+    return row.metrics.find(function (item) {
+      return item.metricId === metric.id;
+    }) || null;
+  }
+
+  function getChartMetricValueFormat(comparison, metric) {
+    const resultRow = comparison.rows.find(function (row) {
+      return findMetricResult(row, metric);
+    });
+    const result = resultRow ? findMetricResult(resultRow, metric) : null;
+
+    return result ? result.valueFormat || "number" : "number";
+  }
+
+  function sumValues(sum, value) {
+    return sum + value;
+  }
+
+  function normalizeExportChartType(chartType) {
+    return Object.prototype.hasOwnProperty.call(EXPORT_CHART_TYPES, chartType)
+      ? chartType
+      : "bar-horizontal";
+  }
+
+  function getExportChartTypeLabel(chartType) {
+    return EXPORT_CHART_TYPES[normalizeExportChartType(chartType)];
+  }
+
+  function drawChartHeader(context, title, subtitle) {
+    context.fillStyle = "#18212F";
+    context.font = "700 28px Inter, Segoe UI, Arial, sans-serif";
+    context.textAlign = "left";
+    context.textBaseline = "alphabetic";
+    context.fillText(title, 32, 42);
+
+    context.fillStyle = "#667085";
+    context.font = "600 16px Inter, Segoe UI, Arial, sans-serif";
+    context.fillText(subtitle || "Показатель", 32, 68);
+  }
+
+  function drawChartFooter(context, width, text) {
+    context.fillStyle = "#94A3B8";
+    context.font = "600 12px Inter, Segoe UI, Arial, sans-serif";
+    context.textAlign = "left";
+    context.textBaseline = "alphabetic";
+    context.fillText(text, 32, 594);
+  }
+
+  function drawEmptyChart(context, width, height, metric, message) {
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, width, height);
+    drawChartHeader(context, "График недоступен", metric && metric.label ? metric.label : "Показатель");
+    drawRoundedRect(context, 110, 170, width - 220, 230, 28, "#F8FAFC");
+
+    context.fillStyle = "#667085";
+    context.font = "800 22px Inter, Segoe UI, Arial, sans-serif";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.fillText(message, width / 2, 285);
   }
 
   function drawValueLabel(context, options) {
@@ -617,6 +1007,14 @@
     }
 
     return output + "...";
+  }
+
+  function getChartValueFormat(rows) {
+    const row = rows.find(function (item) {
+      return item.valueFormat === "percent";
+    });
+
+    return row ? "percent" : "number";
   }
 
   function getExportBarColor(impact) {
