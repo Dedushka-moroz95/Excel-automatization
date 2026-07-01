@@ -73,6 +73,12 @@
         margin-top: 18px;
       }
 
+      .toolbar-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
       .button {
         min-height: 42px;
         padding: 10px 16px;
@@ -88,6 +94,26 @@
       .button:hover,
       .button:focus-visible {
         filter: brightness(1.04);
+        outline: none;
+      }
+
+      .link-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 10px 16px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: #f8fafc;
+        color: var(--text);
+        font-weight: 850;
+        text-decoration: none;
+      }
+
+      .link-button:hover,
+      .link-button:focus-visible {
+        filter: brightness(1.02);
         outline: none;
       }
 
@@ -178,6 +204,10 @@
           align-items: stretch;
           flex-direction: column;
         }
+
+        .toolbar-actions {
+          flex-direction: column;
+        }
       }
     </style>
     <script src="../src/normalizers.js" defer></script>
@@ -195,7 +225,10 @@
         </p>
         <div class="toolbar">
           <p id="testStatus">Тесты запустятся после загрузки страницы.</p>
-          <button id="runTestsButton" class="button" type="button">Запустить тесты</button>
+          <div class="toolbar-actions">
+            <a class="link-button" href="./benchmark.html">Benchmark</a>
+            <button id="runTestsButton" class="button" type="button">Запустить тесты</button>
+          </div>
         </div>
       </section>
 

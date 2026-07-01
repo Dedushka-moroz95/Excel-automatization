@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Metricum Benchmark</title>
+    <style>
+      :root {
+        --bg: #f4f7f9;
+        --card: #ffffff;
+        --card-soft: #f8fafc;
+        --text: #18212f;
+        --muted: #667085;
+        --border: #e2e8f0;
+        --primary: #0f766e;
+        --primary-bright: #14b8a6;
+        --success: #16a34a;
+        --warning: #f59e0b;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.45;
+      }
+
+      main {
+        width: min(100% - 32px, 1180px);
+        margin: 0 auto;
+        padding: 36px 0;
+      }
+
+      .hero,
+      .panel,
+      .results {
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        background: var(--card);
+        box-shadow: 0 12px 34px rgba(24, 33, 47, 0.05);
+      }
+
+      .hero {
+        display: grid;
+        gap: 12px;
+        padding: 28px;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        line-height: 1.05;
+      }
+
+      h1 {
+        font-size: clamp(30px, 5vw, 44px);
+      }
+
+      h2 {
+        font-size: 20px;
+      }
+
+      p {
+        max-width: 780px;
+        margin: 0;
+        color: var(--muted);
+        font-size: 15px;
+        font-weight: 700;
+      }
+
+      .panel {
+        display: grid;
+        gap: 18px;
+        margin-top: 18px;
+        padding: 22px;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+      }
+
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .field span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      select,
+      button {
+        font: inherit;
+      }
+
+      select {
+        min-height: 42px;
+        padding: 10px 12px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--card-soft);
+        color: var(--text);
+        font-weight: 780;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .button {
+        min-height: 42px;
+        padding: 10px 16px;
+        border: 0;
+        border-radius: 14px;
+        background: var(--primary);
+        color: #ffffff;
+        font-weight: 850;
+        cursor: pointer;
+      }
+
+      .button.secondary {
+        border: 1px solid var(--border);
+        background: var(--card-soft);
+        color: var(--text);
+      }
+
+      .button:hover:not(:disabled),
+      .button:focus-visible {
+        filter: brightness(1.04);
+        outline: none;
+      }
+
+      .button:disabled {
+        cursor: not-allowed;
+        opacity: 0.56;
+      }
+
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 48px;
+        padding: 12px 14px;
+        border: 1px solid rgba(20, 184, 166, 0.24);
+        border-radius: 16px;
+        background: rgba(204, 251, 241, 0.5);
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 750;
+      }
+
+      .status strong {
+        display: block;
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 900;
+      }
+
+      .spinner {
+        flex: 0 0 auto;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(20, 184, 166, 0.22);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 700ms linear infinite;
+      }
+
+      .status:not(.active) .spinner {
+        display: none;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .results {
+        margin-top: 18px;
+        overflow: hidden;
+      }
+
+      .table-scroll {
+        overflow: auto;
+      }
+
+      table {
+        width: 100%;
+        min-width: 980px;
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: var(--card-soft);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+      }
+
+      td {
+        font-size: 13px;
+        font-weight: 720;
+      }
+
+      td.numeric {
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+
+      .empty {
+        padding: 26px;
+        color: var(--muted);
+        font-weight: 750;
+      }
+
+      .note {
+        border: 1px solid rgba(245, 158, 11, 0.28);
+        border-radius: 16px;
+        background: rgba(245, 158, 11, 0.09);
+        color: #92400e;
+        padding: 12px 14px;
+        font-size: 13px;
+        font-weight: 760;
+      }
+
+      @media (max-width: 780px) {
+        .controls {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+    <script src="../vendor/xlsx.full.min.js" defer></script>
+    <script src="../src/normalizers.js" defer></script>
+    <script src="../src/excelReader.js" defer></script>
+    <script src="../src/periodBuilder.js" defer></script>
+    <script src="../src/comparator.js" defer></script>
+    <script src="../src/analytics.js" defer></script>
+    <script src="./benchmarkRunner.js" defer></script>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <h1>Metricum Benchmark</h1>
+        <p>
+          Локальный стенд для замера производительности текущего pipeline: генерация CSV,
+          чтение через SheetJS, сбор периодов, сравнение и подготовка dashboard-агрегатов.
+        </p>
+      </section>
+
+      <section class="panel" aria-label="Настройки benchmark">
+        <h2>Параметры теста</h2>
+        <div class="controls">
+          <label class="field">
+            <span>Колонок в файле</span>
+            <select id="columnCountSelect">
+              <option value="20">20 колонок</option>
+              <option value="50">50 колонок</option>
+              <option value="100" selected>100 колонок</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Показателей сравнения</span>
+            <select id="metricCountSelect">
+              <option value="1">1 показатель</option>
+              <option value="3" selected>3 показателя</option>
+              <option value="5">5 показателей</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Режим сравнения</span>
+            <select id="comparisonModeSelect">
+              <option value="endpoint" selected>Итоговый</option>
+              <option value="sequential">Последовательный</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Повторы</span>
+            <select id="repeatCountSelect">
+              <option value="1" selected>1 прогон</option>
+              <option value="2">2 прогона</option>
+              <option value="3">3 прогона</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="actions" aria-label="Запуск benchmark">
+          <button class="button" type="button" data-rows="10000">10 000 строк</button>
+          <button class="button" type="button" data-rows="50000">50 000 строк</button>
+          <button class="button" type="button" data-rows="100000">100 000 строк</button>
+          <button id="runAllButton" class="button secondary" type="button">Прогнать все</button>
+          <button id="clearButton" class="button secondary" type="button">Очистить</button>
+        </div>
+
+        <div id="benchmarkStatus" class="status" role="status" aria-live="polite">
+          <span class="spinner" aria-hidden="true"></span>
+          <span>
+            <strong>Готов к запуску</strong>
+            Выберите размер таблицы. Во время чтения крупного файла вкладка может временно задуматься.
+          </span>
+        </div>
+
+        <div class="note">
+          Важно: 100 000 строк × 100 колонок создают около 10 млн ячеек. Это тяжелый сценарий,
+          который нужен именно для понимания пределов локальной обработки в браузере.
+        </div>
+      </section>
+
+      <section class="results" aria-label="Результаты benchmark">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Строки</th>
+                <th>Колонки</th>
+                <th>Ячейки</th>
+                <th>Размер CSV</th>
+                <th>Генерация</th>
+                <th>Чтение</th>
+                <th>Периоды</th>
+                <th>Сравнение</th>
+                <th>Аналитика</th>
+                <th>Итого</th>
+                <th>Объекты</th>
+                <th>Предупреждения</th>
+              </tr>
+            </thead>
+            <tbody id="benchmarkResults">
+              <tr>
+                <td colspan="12" class="empty">Результаты появятся после запуска benchmark.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>
