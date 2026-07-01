@@ -20,6 +20,9 @@
     }
 
     container.className = "preview-panel";
+    const cellCount = table.workload && Number.isFinite(table.workload.cellCount)
+      ? table.workload.cellCount
+      : table.rows.length * table.headers.length;
     const headersHtml = table.headers
       .map(function (header) {
         return "<th>" + escapeHtml(header.name) + "</th>";
@@ -53,6 +56,9 @@
       "</span>" +
       "<span>Колонок: " +
       table.headers.length +
+      "</span>" +
+      "<span>Ячеек: " +
+      escapeHtml(Normalizers.formatNumber(cellCount, 0)) +
       "</span>" +
       "</div>" +
       '<div class="table-scroll"><table class="preview-table"><thead><tr>' +

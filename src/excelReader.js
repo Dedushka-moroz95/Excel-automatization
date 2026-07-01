@@ -1,6 +1,10 @@
 (function (global) {
   const App = (global.Metricum = global.Metricum || {});
   const Normalizers = App.Normalizers;
+  const LARGE_ROW_THRESHOLD = 50000;
+  const VERY_LARGE_ROW_THRESHOLD = 100000;
+  const LARGE_CELL_THRESHOLD = 3000000;
+  const VERY_LARGE_CELL_THRESHOLD = 5000000;
 
   function readFileAsArrayBuffer(file) {
     return new Promise(function (resolve, reject) {
@@ -50,7 +54,10 @@
     const maxColumns = getMaxColumns(matrix, headerRowIndex);
     const headers = buildHeaders(matrix[headerRowIndex] || [], maxColumns);
     const rows = buildRows(matrix, headers, headerRowIndex);
-    const warnings = analyzeStructure(headers, rows, file.name, headerRowIndex);
+    const workload = buildWorkloadInfo(headers, rows);
+    const warnings = analyzeStructure(headers, rows, file.name, headerRowIndex).concat(
+      analyzeWorkload(workload, file.name)
+    );
 
     return {
       fileName: file.name,
@@ -59,6 +66,7 @@
       headers: headers,
       rows: rows,
       previewRows: rows.slice(0, 8),
+      workload: workload,
       warnings: warnings,
     };
   }
@@ -182,6 +190,53 @@
     }
 
     return warnings;
+  }
+
+  function buildWorkloadInfo(headers, rows) {
+    const rowCount = rows.length;
+    const columnCount = headers.length;
+    const cellCount = rowCount * columnCount;
+    const level =
+      rowCount >= VERY_LARGE_ROW_THRESHOLD || cellCount >= VERY_LARGE_CELL_THRESHOLD
+        ? "very-large"
+        : rowCount >= LARGE_ROW_THRESHOLD || cellCount >= LARGE_CELL_THRESHOLD
+          ? "large"
+          : "normal";
+
+    return {
+      rowCount: rowCount,
+      columnCount: columnCount,
+      cellCount: cellCount,
+      level: level,
+    };
+  }
+
+  function analyzeWorkload(workload, fileName) {
+    if (!workload || workload.level === "normal") {
+      return [];
+    }
+
+    const prefix = workload.level === "very-large" ? "очень крупный файл" : "крупный файл";
+    const message =
+      fileName +
+      ": " +
+      prefix +
+      " - " +
+      formatCount(workload.rowCount) +
+      " строк, " +
+      formatCount(workload.columnCount) +
+      " колонок, примерно " +
+      formatCount(workload.cellCount) +
+      " ячеек. Загрузка, расчет и экспорт могут занять больше времени.";
+
+    return [{
+      type: "warn",
+      message: message,
+    }];
+  }
+
+  function formatCount(value) {
+    return Normalizers.formatNumber(Number(value) || 0, 0);
   }
 
   App.ExcelReader = {
