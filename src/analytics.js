@@ -26,78 +26,88 @@
   }
 
   function buildMetricSummary(rows, metric, comparisonMode) {
-    const items = rows
-      .flatMap(function (row) {
-        const result = row.metrics.find(function (item) {
-          return item.metricId === metric.id;
-        });
+    const best = [];
+    const worst = [];
+    const showComparisonLabel = comparisonMode === "sequential" || comparisonMode === "manual";
+    let improvedCount = 0;
+    let declinedCount = 0;
+    let unchangedCount = 0;
+    let validCount = 0;
+    let valueFormat = "number";
 
-        if (!result || !result.comparisons) {
-          return [];
+    rows.forEach(function (row) {
+      const result = row.metrics.find(function (item) {
+        return item.metricId === metric.id;
+      });
+
+      if (!result || !result.comparisons) {
+        return;
+      }
+
+      result.comparisons.forEach(function (comparison) {
+        if (!Number.isFinite(comparison.delta)) {
+          return;
         }
 
-        return result.comparisons
-          .filter(function (comparison) {
-            return Number.isFinite(comparison.delta);
-          })
-          .map(function (comparison) {
-            return {
-              key: row.key,
-              label: row.label,
-              comparisonLabel: comparisonMode === "sequential" || comparisonMode === "manual" ? comparison.label : "",
-              valueA: comparison.valueA,
-              valueB: comparison.valueB,
-              delta: comparison.delta,
-              deltaPercent: comparison.deltaPercent,
-              valueFormat: comparison.valueFormat || result.valueFormat || "number",
-              impact: comparison.impact,
-              score: comparison.delta,
-            };
+        const item = {
+          key: row.key,
+          label: row.label,
+          comparisonLabel: showComparisonLabel ? comparison.label : "",
+          valueA: comparison.valueA,
+          valueB: comparison.valueB,
+          delta: comparison.delta,
+          deltaPercent: comparison.deltaPercent,
+          valueFormat: comparison.valueFormat || result.valueFormat || "number",
+          impact: comparison.impact,
+          score: comparison.delta,
+        };
+
+        validCount += 1;
+
+        if (validCount === 1) {
+          valueFormat = item.valueFormat;
+        }
+
+        if (item.impact === "good") {
+          improvedCount += 1;
+        } else if (item.impact === "bad") {
+          declinedCount += 1;
+        } else if (item.impact === "neutral") {
+          unchangedCount += 1;
+        }
+
+        if (item.delta > 0) {
+          pushTopItem(best, item, function (left, right) {
+            return right.score - left.score;
           });
-      })
-      .filter(Boolean);
-
-    const improved = items.filter(function (item) {
-      return item.impact === "good";
+        } else if (item.delta < 0) {
+          pushTopItem(worst, item, function (left, right) {
+            return left.score - right.score;
+          });
+        }
+      });
     });
-    const declined = items.filter(function (item) {
-      return item.impact === "bad";
-    });
-    const unchanged = items.filter(function (item) {
-      return item.impact === "neutral";
-    });
-
-    const best = items
-      .filter(function (item) {
-        return item.delta > 0;
-      })
-      .slice()
-      .sort(function (left, right) {
-        return right.score - left.score;
-      })
-      .slice(0, 5);
-
-    const worst = items
-      .filter(function (item) {
-        return item.delta < 0;
-      })
-      .slice()
-      .sort(function (left, right) {
-        return left.score - right.score;
-      })
-      .slice(0, 5);
 
     return {
       metricId: metric.id,
       label: metric.label,
-      valueFormat: items[0] ? items[0].valueFormat : "number",
-      improvedCount: improved.length,
-      declinedCount: declined.length,
-      unchangedCount: unchanged.length,
-      validCount: items.length,
+      valueFormat: valueFormat,
+      improvedCount: improvedCount,
+      declinedCount: declinedCount,
+      unchangedCount: unchangedCount,
+      validCount: validCount,
       best: best,
       worst: worst,
     };
+  }
+
+  function pushTopItem(items, item, compare) {
+    items.push(item);
+    items.sort(compare);
+
+    if (items.length > 5) {
+      items.length = 5;
+    }
   }
 
   App.Analytics = {

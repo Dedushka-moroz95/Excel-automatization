@@ -1,6 +1,7 @@
 (function (global) {
   const App = (global.Metricum = global.Metricum || {});
   const Normalizers = App.Normalizers;
+  const METRIC_PROFILE_SAMPLE_LIMIT = 5000;
 
   function comparePeriods(options) {
     const periods = options.periods;
@@ -279,9 +280,12 @@
       return aggregateFirstMetricValue(options);
     }
 
-    const numericItems = [];
     let firstRaw = "";
     let hasFirstRaw = false;
+    let numericCount = 0;
+    let sum = 0;
+    let min = Infinity;
+    let max = -Infinity;
 
     rows.forEach(function (row) {
       const raw = row.values[options.columnId];
@@ -293,10 +297,17 @@
       }
 
       if (number.isNumeric) {
-        numericItems.push({
-          value: number.value * profile.scale,
-          raw: raw,
-        });
+        const value = number.value * profile.scale;
+        numericCount += 1;
+        sum += value;
+
+        if (value < min) {
+          min = value;
+        }
+
+        if (value > max) {
+          max = value;
+        }
         return;
       }
 
@@ -305,7 +316,7 @@
       }
     });
 
-    if (!numericItems.length) {
+    if (!numericCount) {
       return {
         value: null,
         raw: firstRaw,
@@ -315,14 +326,17 @@
       };
     }
 
-    const values = numericItems.map(function (item) {
-      return item.value;
+    const value = aggregatePreparedNumbers({
+      method: method,
+      count: numericCount,
+      sum: sum,
+      min: min,
+      max: max,
     });
-    const value = aggregateNumbers(values, method);
 
     return {
       value: value,
-      raw: method === "first" ? numericItems[0].raw : Normalizers.formatMetricValue(value, profile.valueFormat, 2),
+      raw: Normalizers.formatMetricValue(value, profile.valueFormat, 2),
       isNumeric: Number.isFinite(value),
       aggregation: method,
       sourceCount: rows.length,
@@ -366,24 +380,20 @@
     return valueFormat === "percent" ? "avg" : "sum";
   }
 
-  function aggregateNumbers(values, method) {
-    if (method === "avg") {
-      return values.reduce(sumValues, 0) / values.length;
+  function aggregatePreparedNumbers(options) {
+    if (options.method === "avg") {
+      return options.sum / options.count;
     }
 
-    if (method === "min") {
-      return Math.min.apply(null, values);
+    if (options.method === "min") {
+      return options.min;
     }
 
-    if (method === "max") {
-      return Math.max.apply(null, values);
+    if (options.method === "max") {
+      return options.max;
     }
 
-    return values.reduce(sumValues, 0);
-  }
-
-  function sumValues(sum, value) {
-    return sum + value;
+    return options.sum;
   }
 
   function pushInvalidMetricValue(options, raw) {
@@ -399,14 +409,16 @@
 
   function buildMetricComparisons(periodValues, comparisonMode, valueFormat, comparisonPairs) {
     if (comparisonMode === "manual") {
+      const valuesByPeriod = new Map();
+
+      periodValues.forEach(function (item) {
+        valuesByPeriod.set(item.periodId, item);
+      });
+
       return (comparisonPairs || [])
         .map(function (pair) {
-          const fromValue = periodValues.find(function (item) {
-            return item.periodId === pair.fromPeriodId;
-          });
-          const toValue = periodValues.find(function (item) {
-            return item.periodId === pair.toPeriodId;
-          });
+          const fromValue = valuesByPeriod.get(pair.fromPeriodId);
+          const toValue = valuesByPeriod.get(pair.toPeriodId);
 
           return buildSingleComparison(fromValue, toValue, valueFormat, pair.label);
         })
@@ -459,23 +471,35 @@
     let rawPercentHints = 0;
     let numericCount = 0;
     let decimalRatioCount = 0;
+    let scannedValues = 0;
 
-    periods.forEach(function (period) {
+    for (let periodIndex = 0; periodIndex < periods.length; periodIndex += 1) {
+      const period = periods[periodIndex];
       const columnId = metric.columns[period.id];
-      const header = period.table.headers.find(function (item) {
-        return item.id === columnId;
-      });
+      const header = findHeader(period.table.headers, columnId);
 
       if (header && Normalizers.headerLooksPercent(header.name)) {
         headerHints += 1;
       }
+    }
 
-      period.table.rows.forEach(function (row) {
+    for (let periodIndex = 0; periodIndex < periods.length; periodIndex += 1) {
+      const period = periods[periodIndex];
+      const columnId = metric.columns[period.id];
+
+      for (let rowIndex = 0; rowIndex < period.table.rows.length; rowIndex += 1) {
+        if (scannedValues >= METRIC_PROFILE_SAMPLE_LIMIT) {
+          break;
+        }
+
+        const row = period.table.rows[rowIndex];
         const raw = row.values[columnId];
 
         if (Normalizers.isEmptyValue(raw)) {
-          return;
+          continue;
         }
+
+        scannedValues += 1;
 
         if (Normalizers.valueLooksPercent(raw)) {
           rawPercentHints += 1;
@@ -483,7 +507,7 @@
 
         const number = Normalizers.normalizeNumber(raw);
         if (!number.isNumeric) {
-          return;
+          continue;
         }
 
         numericCount += 1;
@@ -491,8 +515,12 @@
         if (!Normalizers.valueLooksPercent(raw) && Math.abs(number.value) > 0 && Math.abs(number.value) <= 1) {
           decimalRatioCount += 1;
         }
-      });
-    });
+      }
+
+      if (scannedValues >= METRIC_PROFILE_SAMPLE_LIMIT) {
+        break;
+      }
+    }
 
     const hasPercentHint = headerHints > 0 || rawPercentHints > 0;
     const decimalRatioShare = numericCount ? decimalRatioCount / numericCount : 0;
@@ -502,6 +530,16 @@
       valueFormat: hasPercentHint ? "percent" : "number",
       scale: shouldScaleRatio ? 100 : 1,
     };
+  }
+
+  function findHeader(headers, columnId) {
+    for (let index = 0; index < headers.length; index += 1) {
+      if (headers[index].id === columnId) {
+        return headers[index];
+      }
+    }
+
+    return null;
   }
 
   function firstPresentText() {

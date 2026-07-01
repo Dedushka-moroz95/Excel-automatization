@@ -45,16 +45,10 @@
 
     rows.forEach(function (row) {
       const rawValue = row.values[periodColumn];
-
-      if (Normalizers.isEmptyValue(rawValue)) {
-        emptyRows.push(row.rowNumber);
-        return;
-      }
-
       const label = Normalizers.toText(rawValue).trim().replace(/\s+/g, " ");
       const key = Normalizers.normalizeKey(label);
 
-      if (!key) {
+      if (isEmptyPeriodKey(key)) {
         emptyRows.push(row.rowNumber);
         return;
       }
@@ -76,6 +70,10 @@
       items: items,
       emptyRows: emptyRows,
     };
+  }
+
+  function isEmptyPeriodKey(key) {
+    return key === "" || key === "-" || key === "—" || key === "n/a" || key === "нет";
   }
 
   function buildVirtualPeriod(table, periodColumn, group, index) {

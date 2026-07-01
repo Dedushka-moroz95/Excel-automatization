@@ -81,13 +81,22 @@
 
     for (let rowIndex = 0; rowIndex < limit; rowIndex += 1) {
       const row = matrix[rowIndex] || [];
-      const filledCells = row.filter(function (cell) {
-        return !Normalizers.isEmptyValue(cell);
-      }).length;
+      let filledCells = 0;
+      let textCells = 0;
 
-      const textCells = row.filter(function (cell) {
-        return typeof cell === "string" && !Normalizers.isEmptyValue(cell);
-      }).length;
+      for (let cellIndex = 0; cellIndex < row.length; cellIndex += 1) {
+        const cell = row[cellIndex];
+
+        if (Normalizers.isEmptyValue(cell)) {
+          continue;
+        }
+
+        filledCells += 1;
+
+        if (typeof cell === "string") {
+          textCells += 1;
+        }
+      }
 
       const score = filledCells + textCells * 0.5;
 
@@ -101,13 +110,18 @@
   }
 
   function getMaxColumns(matrix, headerRowIndex) {
-    const rowsForScan = matrix.slice(headerRowIndex, headerRowIndex + 50);
-    return Math.max.apply(
-      null,
-      rowsForScan.map(function (row) {
-        return row.length;
-      })
-    );
+    const limit = Math.min(matrix.length, headerRowIndex + 50);
+    let maxColumns = 0;
+
+    for (let rowIndex = headerRowIndex; rowIndex < limit; rowIndex += 1) {
+      const row = matrix[rowIndex] || [];
+
+      if (row.length > maxColumns) {
+        maxColumns = row.length;
+      }
+    }
+
+    return maxColumns;
   }
 
   function buildHeaders(rawHeaders, maxColumns) {
@@ -126,25 +140,39 @@
   }
 
   function buildRows(matrix, headers, headerRowIndex) {
-    return matrix
-      .slice(headerRowIndex + 1)
-      .filter(function (row) {
-        return row.some(function (cell) {
-          return !Normalizers.isEmptyValue(cell);
-        });
-      })
-      .map(function (row, rowIndex) {
-        const values = {};
+    const rows = [];
 
-        headers.forEach(function (header) {
-          values[header.id] = row[header.index] === undefined ? "" : row[header.index];
-        });
+    for (let matrixIndex = headerRowIndex + 1; matrixIndex < matrix.length; matrixIndex += 1) {
+      const rawRow = matrix[matrixIndex] || [];
 
-        return {
-          rowNumber: headerRowIndex + 2 + rowIndex,
-          values: values,
-        };
+      if (!hasUsefulCells(rawRow)) {
+        continue;
+      }
+
+      const values = {};
+
+      for (let headerIndex = 0; headerIndex < headers.length; headerIndex += 1) {
+        const header = headers[headerIndex];
+        values[header.id] = rawRow[header.index] === undefined ? "" : rawRow[header.index];
+      }
+
+      rows.push({
+        rowNumber: matrixIndex + 1,
+        values: values,
       });
+    }
+
+    return rows;
+  }
+
+  function hasUsefulCells(row) {
+    for (let index = 0; index < row.length; index += 1) {
+      if (!Normalizers.isEmptyValue(row[index])) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   function analyzeStructure(headers, rows, fileName, headerRowIndex) {
